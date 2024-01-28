@@ -1,0 +1,86 @@
+\section{Security Analysis}
+\label{sec:security-analysis}
+
+\jw{Reference for security of design choices. THIS SECTION SHOULD NOT BE PUBLIC.}
+
+\jw{TODO: Move any info we don't want to reveal to the attackers into this section}
+
+\subsection{Cryptographic Primitives}
+
+\begin{itemize}
+    \item Encryption
+    \begin{itemize}
+        \item\ [\xmark\xmark\xmark AES-ECB] AES-ECB mode is catastrophically insecure when encrypting more than 1 block (128-bits), since it reveals the relationship between the plaintext over block boundaries (see the classic ``Linux penguin'' photo)
+        \item\ [\xmark AES-\{CBC,CTR\}] AES-CBC and AES-CTR modes are CPA-secure (\emph{bare minimum} for confidentiality in modern-day) but not CCA-secure: modifying the ciphertext modifies the plaintext blocks in a predictable way, which is not ideal in this scenario (e.g. if active attacker can get car to use malicious ciphertext based on ciphertext from a previous transcript, attacker might be able to unlock without knowing the key)
+        \item\ [\xmark most AES, \cmark AES-GCM, \cmark A\textsc{scon}] AES-ECB, AES-CBC, and CES-CTR mode do not provide any assurances of authentication or data integrity, unlike A\textsc{scon} or AES-GCM. Not being able to validate the integrity of a ciphertext is usually insufficient in practice. In this context, Authenticated Encryption (with Associated Data; AE/AEAD) helps bind encryptions to the appropriate context (e.g., unlock) and verify that no tampering of the ciphertext occurred in transit.
+        \item\ [\cmark\cmark A\textsc{scon}, \cmark AES-GCM] Both AES-GCM and A\textsc{scon} have been widely analyzed to be efficient for both hardware~\cite{EPRINT:AagZid21} and software implementations, even on embedded devices or microcontrollers. A\textsc{scon} is significantly more performant in both throughbut and average scaled area $\times$ energy with ASIC implementations~\cite{EPRINT:AagZid21} and throughput with FPGA implementations~\cite{EPRINT:MHNFAKG20}. Software implementations have comparable binary size ($\approx 3.2 KB$ for both AES-GCM and A\textsc{scon} AEAD; $\approx 2.4 KB$ for SHA-256 and $\approx 1.9 KB$ for \textsc{ascon-hash}). And, while a well-optimized software implementation of A\textsc{scon} is significantly faster than AES-GCM on the microcontrollers tested, any comparable implementation should be competitive to satisfy functional requirements for our purposes ($332 {\mu}s$ for AES-GCM vs. $61-801 {\mu}s \ll 1 s$ on a STM32F1 ``bluepill'', N/A for AES-GCM vs. $\approx 2-200 ms < 1 s$ on an Arduino Uno R3)~\cite{lwc-sw-benches}.
+        \item\ [\xmark\xmark\xmark AES] Attacks against software implementations of AES are extremely vulnerable to side-channel attacks (SCA), especially regarding S-Boxes.
+        \item\ [\cmark AES, \cmark A\textsc{scon}] Tiny implementations of both A\textsc{scon} and AES exist, ranging from about 3-5 KB.
+        \item\ [\xmark AES-\{GCM,CTR\}, \cmark A\textsc{scon}] Even a few repeated nonces (nonce misuse) under the same key with AES-GCM and AES-CTR can result in catastrophic authentication violations and key recovery~\cite{USENIX:BZDSJ16}. By contrast, A\textsc{scon} is much more resilient to nonce misuse: CPA-security is violated after 4 nonce reuses on 4-round A\textsc{scon}~\cite{EPRINT:HuPey22}, $2^{40}$ nonce reuses on 6-round~\cite{BCP22}, or $2^{46}$ nonce reuses on 8-round~\cite{EPRINT:HuPey22}. And, while there exists a theoretical zero-sum distinguisher attack on a full 12-round A\textsc{scon} permutation which requires $2^{55}$ reuses, the authors emphasize that this provides very little advantage to practical attackers using this differential cryptanalysis method. Also, unlike AES-GCM, such nonce reuse attacks do not result in catastrophic key recovery by the attacker, requiring $2^{31}$ nonce reuses in 5-round A\textsc{scon} to recover the key~\cite{EPRINT:Tezcan20}. \textbf{We should use the recommended version of} A\textsc{scon} \textbf{which uses the full number of permutation rounds for initialization/finalization and processing phases.}
+        \item\ [\xmark AES, \cmark A\textsc{scon}] Unlike AES-GCM, A\textsc{scon} has leveled (and masked) implementations which break the initialization and finalization (and middle) portions of the key and intermediate state into \emph{shares} to help mitigate SCA~\cite{EPRINT:DDEGMP19}. For $d+1$ shares, it requires $d(d+1)/4$ (low) bits of randomness~\cite{JCEng:GroMan18}, which is amenable to systems which offer low entropy / whose randomness sources are weak.
+        \item\ [? AES-GCM-SIV] Unsure whether there's any AES-GCM-SIV implementations which are side-channel resistant or even small enough code size to run efficiently on a microcontroller, but it's better than AES-GCM since it's nonce-reuse resistant like A\textsc{scon}...?
+        \item \textbf{SUGGESTED IMPLEMENTATION:} Side-channel resistant and nonce-misuse resistant Authenticated Encryption (AE or AEAD)
+        \begin{itemize}
+            \item A\textsc{scon}, \href{https://github.com/ascon/ascon-c}{authors' impl.} (OK quality for crypto code, but no PRNG or HKDF)
+            \item \st{A\textsc{scon}}, \href{https://github.com/rweather/ascon-suite}{Rhys Weatherley'simpl. } (has the above primitives, but goes against A\textsc{scon} specs and solely made by a single Arduino cryptography developer)
+            %\item \st{AES-GCM-SIV}, \href{https://github.com/Shay-Gueron/AES-GCM-SIV}{authors' impl.} (Less vulnerable to nonce misuse, ikely still vulnerable to side-channels, obscure impl.)
+            %\item \st{AES-GCM} (catastrophically vuln. to nonce misuse by nonces repeating with e.g. bad PRNG or poor protocol impl.)
+        \end{itemize}
+    \end{itemize}
+    \item KDF / Hashing function
+    \begin{itemize}
+        \item\ [\xmark most, ? Argon2d, \cmark Argon2i, \cmark\cmark\cmark A\textsc{scon}] Most hash functions and key-derivation functions (KDFs) do not provide any guarantees of side-channel attack (SCA) resistance. NIST Password Hashing Competition's winner (Argon2i) and NIST Lightweight Cryptography competition's winner (A\textsc{scon}) do, however. Argon2d is data-depenent which mitigates time-memory tradeoff attacks (TMTO), but is susceptible to SCA. Conversely, Argon2i is data-independent which mitigates SCA, but is more vulnerable to time-memory tradeoff attacks. Argon2id balances these two designs and is generally recommended, but Argon2i may be more appropriate when we're using small ``password-based'' inputs like \pin.
+        \item\ [\xmark\xmark\xmark A\textsc{scon}, \xmark most hashes, ? PBKDF2, \cmark Argon2] Especially in the context of hashing a pairing \pin, we should make it difficult to pre-compute a ``rainbow table'' of $(\pin, \H(\pin))$ pairs to infer \pin if bits of $\H(\pin)$ were revealed. Most hash functions, especially A\textsc{scon}, do not require much memory to compute quickly, especially (and sometimes by design) on speicalized GPA/FPGA/ASIC hardware. PBKDF2 can also be computed in low memory as well without custom parameter/protocol tweaking. Argon2, however, is speicfically designed to have a memory-hard KDF so this would slow down attackers even with specialized hardware. We can work around this, if needed (e.g. by adding a secure salt which makes the full input hard to guess for the attacker) but it's something worth considering.
+        \item\ [\xmark most, ? A\textsc{scon}, ? PBKDF2, \cmark Argon2] I doubt we'd need to fine-tune the crypto super precisely, but Argon and to a lesser extent PBKDF2 and A\textsc{scon} allow you to customize security parameters in a way that works best for your specific use-case.
+        \item\ [\xmark most, \xmark Argon2, \cmark? SHA-256, \cmark\cmark\cmark A\textsc{scon}] Due to time and perhaps firmware size constraints, there is genuine motivation for sharing as much crypto code / using the fewest libraries as possible. A\textsc{scon} lets us use most of what we need out-of-the-box already (AEAD, hashing) with the ability to extend it and make PRNGs with MACs (see below). Every other external library/cryptosuite we could find is either less versatile / too specialized to do everything we need (e.g., Argon2) or has too much bloat to be worth paring down for inclusion in the firmware (e.g., OpenSSL). And, while \texttt{tiva-c} gives us SHA-256 driver functionality for ``free'', I \jw{} question how well Texas Instruments implemented cryptographic features for an evaluation board, and \textbf{strongly} prefer implementaitons with published security analyses and expert auditing. \jw{OTOH, this begs the question on whether we should put all our ``eggs in one basket'', so to speak, with using \texttt{ascon} for everything. I did a lot of research to make sure it has been vetted in the literature, including the specific implementation we're using. Its construction is secure, has been analyzed quite thoroughly. I couldn't find any practical SCA or preprocessing attacks on it.}
+        \item \textbf{SUGGESTED IMPLEMENTATION:} Side-channel attack and preprocessing attack resistant hash function / KDF
+        \begin{itemize}
+            \item \st{Argon2i}, \href{https://github.com/P-H-C/phc-winner-argon2}{authors' impl.} (Probably the ideal KDF for this use-case. No time left to integrate into firmware though, and possibly overkill...)
+            \item A\textsc{scon}, \href{https://github.com/ascon/ascon-c}{authors' impl.} (lightweight hash and not a password-based KDF. We'll need to make sure input space is large enough and rate-limiting is good enough to make ``rainbow table'' attacks impractical.)
+            %\item \st{AES-GCM-SIV}, \href{https://github.com/Shay-Gueron/AES-GCM-SIV}{authors' impl.} (Less vulnerable to nonce misuse, ikely still vulnerable to side-channels, obscure impl.)
+            %\item \st{AES-GCM} (catastrophically vuln. to nonce misuse by nonces repeating with e.g. bad PRNG or poor protocol impl.)
+        \end{itemize}
+    \end{itemize}
+    \item Pseudo-random number generator (PRNG) / Deterministic random bit generator (DRBG)
+    \begin{itemize}
+        \item\ Every PRNG algorithm will need to be initialized a seed with moderate entropy (i.e., random even across power cycles or resets). Assuming that's fine for now\dots
+        \item\ [\xmark\xmark\xmark \texttt{tiva-c} / system-level RNG] The Texas Instruments drivers for this board, \texttt{tiva-c}, does not include a PRNG algorithm (see \href{https://drive.google.com/file/d/1bJn0p1VEi76f8Ozd0EeNZcn6_i-o7chI/view}{TivaWare Perhipheral Driver Library, Literature Number SPMU298E}). Additionally, the board does not have any sort of chip for ``true'' random number generation. And so, we should not rely on RNG functions which (directly or indirectly) rely on system-level sources, but we still need cryptographically-suitable randomness. \textbf{This implies that we'll need to generate an unpredictable seed from scratch.}
+        \item\ [? A\textsc{scon}] Annoyingly, the only implementation we could find for A\textsc{scon} PRNGs was the poorly-written one: the authors themselves have not implemented it in code and, while similar sponge constructions such has \textsc{keccak} family (of SHA-3 fame) have been used to construct PRNGs~\cite{CHES:BDPV10, EC:GazTes16}, the authors of A\textsc{scon} have not implemented these techniques for its sponge construction. However, we need a PRNG algorithm that (mandatory) is cryptographically secure and (ideally) is side-channel resistant.
+        
+        \item\ [\cmark? most primitives, \cmark A\textsc{scon}] There are known techniques for constructing PRNGs from simpler primitives, such as counter-based block ciphers, hash functions, and HMAC constructions~\cite{NIST-DRBG}. The security of these DRBGs primarily rely on the security of the underlying cryptosystem: by implication, since HMAC-based constructions require far less strict collision resistance properties of its underlying hash function~\cite{NIST-HMAC, NIST-HMAC-MD5}, implementing HMAC\_DRBGs with A\textsc{scon} is an option. Indeed, it is sufficient to use any MAC function which satisfies the properties of a keyed PRF~\cite{WISA:Hirose08}, which A\textsc{scon} \emph{does} implement in this manner.
+        \item\ [\xmark most, \xmark Argon2, \cmark? SHA256, \cmark? HMAC-SHA256, \cmark A\textsc{scon}] See the point about code sharing in the hashing evaluation above, and in particular why it might not be great idea to trust the \texttt{tiva-c} driver impl.
+        \item \textbf{SUGGESTED IMPLEMENTATION:} HMAC-based DRBG using A\textsc{scon}
+        \begin{itemize}
+            \item A\textsc{scon}, \href{https://github.com/ascon/ascon-c}{authors' impl.}: HMAC\_DRBG (Gives us a HMAC/keyed PRF which we can use. Follow the NIST SP 800-90 HMAC\_DRBG specs to implement a PRNG algorithm)
+            \item \st{A\textsc{scon}: Hash\_DRBG} (ditto, but relies more strongly on collision resistance properties of underlying hash)
+            %\item \st{AES-GCM-SIV}, \href{https://github.com/Shay-Gueron/AES-GCM-SIV}{authors' impl.} (Less vulnerable to nonce misuse, ikely still vulnerable to side-channels, obscure impl.)
+            %\item \st{AES-GCM} (catastrophically vuln. to nonce misuse by nonces repeating with e.g. bad PRNG or poor protocol impl.)
+        \end{itemize}
+    \end{itemize}
+\end{itemize}
+
+\subsection{Pairing}
+
+\begin{itemize}
+    \item This pairing protocol would technically reveal $\enckey_5$, allowing for a passive unlock. However, this does not fall under the specified threat model because Car 5 explicitly does not release flags from an unlock (see above scenarios as well).
+    \item Care must be taken to avoid attackers inferring or extracting $\pin \Vert \mathsf{psalt}$ from the car directly, however, as the attacker has access to both a PFOB and UPFOB to engage in the pairing protocol. We rely on the following protections:
+    \begin{enumerate}
+        \item The car stores $\mathsf{psalt}$ and $\H(\pin \Vert \mathsf{psalt})$ securely in the EEPROM;
+        \item Incurring additional delays when the incorrect PIN is provided (up to 5 seconds) rate-limits the number of attempts the attacker can make to guess the correct \pin;
+        \item Using a random secure salt mitigates rainbow-table and other preprocessing attacks on \pin. If the attacker does not know $\mathsf{psalt}$, they cannot efficiently precompute the exected values of the hash across all $16^6 = 16{,}777{,}216$ possible PINs; and \jw{Without a private salt, the hash of every \pin could be stored in $16^6 \cdot 256\text{b}/8/1024^2 = 512\text{ MiB}$. An $s$-bit private salt would factor $\times 2^{s-1}$ on average into storage and computation costs};
+        \item Using a side-channel resistant hash function $\H(\cdot)$ prevents leakage of $\mathsf{psalt}$, and performing constant-time comparisons avoids leakage of $h = \H(\pin \Vert \mathsf{psalt})$.\jw{TODO: Incorporate discussion about comparing X blocks at a time to prevent leaking}
+    \end{enumerate}
+\end{itemize}
+
+\subsection{Packaging Features}
+
+We recognize that AEAD/MAC/digitally signatures would be more sane for packaging and verifying features than comparing unique values. This is fine for the competition, however. Since this relies on asymmetric cryptography to prevent a fob from forging a packaged feature instead of protecting the feature password on the car and also uses much less space. We decided not to take this approach due to time constraints of finding suitable cryptographic primitives for this challenge.
+
+\subsection{Enabling Features}
+
+While it might incur both security and scalability issues in practice to send and use feature passwords \featpwd{\carid}{\featid} in the clear, the issues with managing this many unique random values appear out of scope for this competition. This relies on the observations that:
+\begin{enumerate}
+    \item A car's installed features can be decided during the build process,
+    \item If the password for authenticating features is unique across any car and challenge-relevant feature, interception during the enable feature process of one car/feature pair will never help a different car to enable that same feature during unlock, and
+    \item There are a very limited number of unique feature-car pairs to keep track of in this challenge. Host secrets will contain at most $4 \cdot 6 \cdot 128\text{b}/8 = 384\text{B}$ of unique feature passwords as relevant to the scenarios. This translates to most $4 \cdot 128\text{b}/8 = 64\text{B}$ of packaged features (1,2,3, and any of 0,4-255) on any fob's EEPROM and $4 \cdot 256\text{b}/8 = 128\text{B}$ of hashed features on any car's EEPROM. See \Cref{sec:build} and \ref{sec:package-feature} for more details.%, or max of $256 \cdot 256 \cdot 128\text{b} / 8 / 1024 = 1 \text{ MiB}$ in host secrets, or \hl{$256 \cdot 128\text{b} / 8 / 1024 = 4 KiB$ in the car/fob's EEPROM if all Feature Numbers 0-255 were supported}\jw{FUNCTIONAL ERROR: This implies we CANNOT support 256 128-bit feature passwords since EEPROM's not large enough, I think}.
+\end{enumerate}

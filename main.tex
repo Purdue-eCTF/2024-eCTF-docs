@@ -1,0 +1,66 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%   Created By:     Jacob White
+%   Email:          white570@purdue.edu
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\documentclass{article}
+\usepackage[fontsize=12pt]{scrextend}   % specify 12pt font
+\usepackage[margin=1in, letterpaper]{geometry}     % specify 1in margins
+
+% Usage:
+% \iflong
+%   content if long version
+% \else
+%   content if short version
+% \fi
+\newif\iflong
+%\longtrue
+\longfalse
+% TODO: CHANGE ^ TO \longfalse BEFORE SUBMISSION
+
+%%% Common template packages (must come before macros.tex)
+\input{imports.tex}
+
+%%% Macros, environments, and other constructions
+\input{macros.tex}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Author comments go here (xcolor allowed)
+%-------------------------------------------------------------------
+\newcommand{\jw}[1]{\textcolor{blue}{#1}}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\newcommand{\TODO}[1]{\par \noindent \textbf{\underline{TODO:}}\vspace#1}
+%\newcommand{\NOTE}[1]{\par \noindent \textbf{NOTE:}\space#1}
+
+\title{MITRE eCTF 2024:\\MISC Medical Devices}
+\author{Purdue University (\texttt{b01lers})}
+\date{\today}
+
+
+
+\begin{document}
+\maketitle
+
+\jw{This is a comment. Ctrl+F for this command, replace color and signature if you want one too. -- JW}
+
+\input{intro}
+
+\input{threat_model}
+
+\input{primitives}
+
+\input{build}
+
+% TODO: Functionality-specific functionality and security met
+
+\iflong
+\input{analysis}
+\fi
+
+
+\newpage
+\bibliographystyle{alpha}
+\bibliography{cryptobib/abbrev3,cryptobib/crypto_crossref,other_sources}
+
+\end{document}

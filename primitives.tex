@@ -1,0 +1,90 @@
+\section{Cryptographic Primitives}
+\label{sec:crypto-primitives}
+
+%\subsection{Authenticated Encryption}
+
+ %Authenticated Encryption with Associated Data, or AEAD for short, is a cryptographic primitive which guarantees both confidentiality and also integrity/authenticity for the messages it encrypts.
+ %\iflong
+ %AEAD allows for the addition of public \textit{associated data} (AD) as input into encryption/decryption, effectively binding the ciphertext to a shared context (often, the ciphertext's packet header). More formally, an
+ %\else An \fi AEAD scheme can be defined as follows:
+
+ %\begin{description}
+ %   \item[$\mathsf{AEAD}.\enc(K,N,A,P) \to (C,T)$:] Authenticated Encryption (AE) takes as input a symmetric key $K$, a \emph{unique} nonce $N$, public associated data $A$, and plaintext $P$. It outputs its ciphertext $C$ along with an authentication tag $T$ used to verify its authenticity.
+ %   \item[$\mathsf{AEAD}.\dec(K,N,A,C,T) \to P$:] Verified Decryption takes as input the symmetric key $K$, the nonce $N$ and associated data $A$ used to encrypt, the ciphertext $C$, and the tag $T$. While decrypting, it uses tag $T$ to verify that $(K,N,A,C)$ was unmodified. It outputs the decrypted plaintext $P$, or error ($\bot$) if the verification check fails.
+ %\end{description}
+
+ %We choose to instantiate our AEAD with the authors' implementation of theNIST Lightweight Cryptography winner, A\textsc{scon}-128~\cite{JC:DEMS21}. A\textsc{scon} uses a duplex sponge-based mode of operation. We use the recommended parameters with uniformly random 128-bit key $K$, $r=64$ bit rate (i.e., the block length for processing associated data, plaintext, and ciphertext), and a capacity of $c=256$ bits. The output has $|C| = |P|$ with a 128-bit tag $T$. We choose 128-bit nonces $N$ uniformly randomly.
+
+ %A\textsc{scon}-128 was chosen primarily for its impressive resistance against nonce-misuse even compared to AES-GCM-SIV, small code binaries, and resistance to various side-channel attacks (SCA).
+ %\iflong
+ %Internally, A\textsc{scon}'s AEAD uses only a 320-bit internal state. For both encryption and decryption it uses a $a=12$ round permutation $p^a$ for initializing the state with key/nonce and finalizing with a tag, and a $b=6$ round permutation $p^b$ for iteratively ``absorbing'' the associated data and input blocks then ``squeezing'' out the output blocks.
+ %\else
+ %Its permutations use $a=12$ rounds for initialization/finalization and $b=6$ rounds for data processing (i.e., encryption/decryption).
+ %\fi
+ %See \cite{JC:DEMS21} for more details about how A\textsc{scon} works.
+
+ %\subsection{Cryptographic Hash Functions}
+
+%Cryptographic hash functions are a one-way function which takes an arbitrary-length input and produces a (short) fixed-length output which minimizes the number of potential \emph{collisions} (i.e., two distinct inputs producing the same output) and cannot be efficiently inverted:
+%$$H : \{0,1\}^* \to \{0,1\}^\ell$$
+%We choose to instantiate our hash function with A\textsc{scon} hash~\cite{JC:DEMS21}, which uses a sponge-based mode of operation. We use the recommended parameters with a rate/block-length of $r=64$ bits, a capacity of $c=256$ bits, and a hash ``digest'' (output) size of $\ell=256$ bits. Its permutations use 12 rounds for both initialization/finalization and data processing.
+
+%A\textsc{scon}-H\textsc{ash} was chosen primarily for its collision resistance (particularly, against identical-prefix attacks) due to the sponge construction, resistance to SCA, and minimal binary size.
+%\iflong
+%A large proportion shares code with A\textsc{scon}'s AEAD mode as well, which greatly reduces the code binary size.
+%\fi
+%\newpage
+
+%\subsection{Pseudo-random Number Generators}
+
+%A pseudo-random number generator (PRNG), also known as a deterministic random-bit generator (DRBG), is a function which takes a random and ideally high-entropy \emph{seed} as input to produce a stream of pseudo-random bits which remain unpredictable unless the seed is known.
+%\iflong
+%With cryptographically-secure PRNGs, one should not be able to infer the seed, internal state between executions, or prior/future inputs \emph{even if an attacker sees the random bits it generates}. PRNGs are especially useful for scenarios such as these, where the operating system or hardware only has access to weak and/or infrequent sources of entropy for generating ``true'' random values, and needs to generate significantly longer ``random-looking'' bitstrings than hardware sources can allow.
+%\fi
+%More formally, a PRNG can be defined by the following algorithms:
+
+%\begin{description}
+%    \item[$\mathsf{PRNG}.\mathsf{init}(s) \to \sigma$:] Given a high-entropy random seed $s$, initialize the internal state $\sigma$.
+%    \item[$\mathsf{PRNG}.\mathsf{gen}(\sigma, b, \mathsf{aux}\!=\!\texttt{NULL}) \to (r, \sigma')$:] Given the internal state $\sigma$, \#bits requested $b$, and\\optional auxiliary data $\mathsf{aux}$, update the state and return a $b$-bit pseudo-random $r$.
+%    \item[$\mathsf{PRNG}.\mathsf{reseed}(\sigma, e, \mathsf{aux}\!=\!\texttt{NULL}) \to \sigma':$] Given the current internal state $\sigma$, a high-entropy random input $e$, and optional auxiliary data $\mathsf{aux}$, update the state with fresh entropy.
+%\end{description}
+
+%\iflong
+%There are many ways of constructing PRNGs. A common approach to constructing PRNGs, as defined by NIST SP 800-90A Rev.1~\cite{NIST-DRBG}, is to rely on the security of an underlying cryptographic primitive: for example, using counter-based modes of operation for encryption, hashes, or message authentication codes (MACs) / keyed PRFs. Such constructions are especially useful with limited access to cryptographic libraries or sources of randomness.
+
+%And, as we could not find any cryptographically-secure PRNGs provided by the board's drivers or any other system-level sources of randomness (which most libraries' RNGs often rely on). Many other approaches were deemed too inefficient given the functional constraints of the competition as well, so we chose to use the HMAC/keyed PRF function in the A\textsc{scon} cryptosuite to implement a suitable PRNG. In particular, we chose the HMAC\_DRBG implementation as specified in NIST SP 800-90A since we could not find any SCA-resistant counter-based ciphers to implement CTR\_DRBG with.
+
+%The security of PRNG schemes rely on the security of the primitives used to construct them~\cite{NIST-DRBG} and, in turn, HMACs are less reliant on the collision resistance properties of their underlying hash functions~\cite{NIST-HMAC-MD5}. While the NIST specifications offered such security claims without proofs, HMAC\_DRBG was later formally proven to be secure assuming only that the underlying HMAC acts as a keyed PRF~\cite{WISA:Hirose08}.
+%\else
+%We implement the HMAC-based DRBG as specified by NIST SP 800-90A Rev.1~\cite{NIST-DRBG} which has been proven secure as long as the underlying HMAC primitive satisfies the properties of a keyed PRF~\cite{WISA:Hirose08}. Furthermore, HMACs are well-known to be less reliant on the collision resistance of their underlying hash functions~\cite{NIST-HMAC-MD5}.
+%\fi
+%Indeed, the authors' official implementation of A\textsc{scon}
+%\iflong
+%\footnote{A\textsc{scon} source code: \url{https://github.com/ascon/ascon-c}}
+%\fi
+%provides a combined HMAC/keyed PRF construction to use.
+
+%See the NIST SP 800-90A specifications for more details on how the PRNG works.
+
+%Regardless of how secure the PRNG algorithm is,
+%\iflong
+%the randomness of its output relies on the entropy of the seed it was instantiated with, and choices of seed and reseeding policies must be modified as appropriate for the particular device and application using it.
+%\else
+%it is also important to consider the quality of the entropy sources used to instantiate the seed.
+%\fi
+%And so, we briefly discuss how we obtained sources of entropy on the board as well.
+
+%\paragraph{Seed generation.}
+%\iflong
+%Soon after powering on, many hardware-level sources of randomness commonly used for PRNGs are ill-suited for seeding on this microcontroller, either producing obviously non-random values or being easily manipulatable.
+%\fi
+%One of the most robust sources we could find to create the initial seed on the board was SRAM since, immediately after a power cycle, most memory blocks contain random data prior to initialization, and most blocks remain untouched by the bootloader. We construct the seed by hashing together large blocks of SRAM along with other random data we store on EEPROM as entropy sources. Together, this ensures that the seed will change unpredictably across both power cycles and resets.
+
+%\paragraph{Reseeding policies.} After the board has had time to ``warm up'', we have access to many other sources of entropy. In particular, we incorporate current \texttt{CPUUsageTick} as a source of randomness along with entropy provided by UART packet sends from previous protocol executions, if available. Then, as per NIST recommendations, we hash the entropy inputs and nonce together with the current state of the PRNG to incorporate additional entropy. We deviate slightly from the original specifications, fine-tuning its usage to this specific application by enforcing a reseed after the very first 128-bit random value that's generated. We also chose a significantly more conservative reseed interval of 8192 random values.
+
+%We have vetted the quality of our on-board PRNG implementation using an implementation of the test suites defined in NIST SP 800-22 Rev. 1A~\cite{NIST-PRNG-TESTS}.
+%\iflong
+%A summary of the test suites' $p$-values are below, where $0.0$ indicates that the test distinguishes the PRNG output from random and $1.0$ indicates that it is indistinguishable:
+
+
+%\par In the remaining sections, we will discuss at a high-level how each of these primitives are used to implement each PARED protocol, and how this achieves the security requirements.

@@ -1,0 +1,50 @@
+\section{Building \& Deploying Environment}
+\label{sec:build}
+
+\subsection{Deployment}
+\label{sec:deploy}
+
+\iflong
+\begin{figure}[H]
+    \begin{center}
+        %\includegraphics[width=0.8\linewidth]{media/ref-deployment.png}
+    \end{center}
+    \caption{Reference design for deploying PARED system and host secrets}
+    \label{fig:build-deployment}
+\end{figure}
+\fi
+
+%\begin{assumption*}
+%    All features which are available to a car must be decided during the car's build process.
+%\end{assumption*}
+
+%The host secrets file will contain the following values:
+%\begin{itemize}
+%    \item $\enckey_\carid$: 16 B \textbf{encryption keys} for each Car \carid, used by the car and its paired fobs.
+%    \item $\mathsf{fpwd}$: 16 B random \textbf{feature passwords} for each (Car \carid, Feature \featid).
+%    \item $\mathsf{psalt}$: 26 B random \textbf{secure salts} for each Car \carid, shared by its paired fobs.
+%    \item $\mathsf{fsalts}$: 48 B random \textbf{secure salts} for each (Car \carid, Feature \featid), used by the car.
+%\end{itemize}
+
+\subsection{AP and Component Firmware}
+\label{sec:firmware}
+
+\iflong
+\begin{figure}[H]
+    \begin{center}
+        %\includegraphics[width=0.8\linewidth]{media/ref-build-car.png}
+        %\includegraphics[width=0.8\linewidth]{media/ref-build-fobs.png}
+    \end{center}
+    \caption{Reference designs for the firmware}
+    \label{fig:build-car-and-fobs}
+\end{figure}
+\fi
+
+%The Car IDs \carid and Feature Numbers \featid are 8-bit unsigned integers. The pairing PIN \pin is a 6 hex digit ASCII string (``\texttt{000000}''--``\texttt{FFFFFF}'').
+
+%\parhead{Car} For each Car \carid, its encryption key $\enckey_\carid$, the list of hashes for all available features' passwords $\featlist{\carid}[\featid] \defeq H\left( \mathsf{fsalt}_{\carid}^{(\featid)} \big\Vert\mathsf{fpwd} \right)$, and its secure salt(s) $\mathsf{fsalt}_{\carid}^{(\featid)}$ are protected in the EEPROM.%$\carid$ (public) is also contained in the car's EEPROM.
+
+%\parhead{PFOB} For each fob which is initially paired to some Car \carid, its corresponding encryption key $\enckey_\carid$, 256-bit pairing PIN hash $\H(\mathsf{psalt} \Vert \pin)$, and its secure salt $\mathsf{psalt}$ are written to and protected in the EEPROM.
+%\carid (public) is also contained on the EEPROM, which helps tie it to Car \carid (although only the key is used for proving that it's paired; see \Cref{sec:unlock}).
+
+%\parhead{UPFOB} Unpaired fobs have no special values initially written into the EEPROM beyond those mentioned in the technical specifications. See \Cref{sec:pair} for details on how it retrieves the above values to become a PFOB.

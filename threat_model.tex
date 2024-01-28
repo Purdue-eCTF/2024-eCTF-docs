@@ -1,0 +1,80 @@
+\section{Threat Model}
+\label{sec:threat-model}
+
+\subsection{Users and Devices}
+
+%\parhead{Host} The host computer is a general-purpose PC which builds the car and fob binaries, and also communicates with the car and fobs over a UART serial interface for many of the PARED protocols. It contains tools which will be used to pair fobs, package and enable features, and unlock a car according to the aforementioned features.
+
+%\parhead{Cars} In this scenario, a car is built with a list of available features, with the user having a subset of its features packaged. With these, a user who unlocks the car with their fob (ideally paired) should be able to send packaged features for the car to recognize and enable.
+
+%\parhead{Fobs} A user can have fobs which are either \emph{unpaired} or \emph{paired} or with a particular car (for short, UPFOB or PFOB resp.). Every car comes with an initial PFOB which can subsequently be used to pair UPFOBs. Newly-paired fobs should operate identically to the initially-paired fob as well (i.e. it should be able to pair new fobs and unlock the car).
+
+%We will develop the PARED protocols to run on these microcontrollers, and their binaries will be encrypted by MITRE's secure bootloader.
+
+\iflong
+\begin{figure}[H]
+	\begin{center}
+		%\includegraphics[width=0.8\linewidth]{media/cars.png}
+	\end{center}
+	\caption{A list of cars provided to attackers and access allowed to each}
+	\label{fig:cars}
+\end{figure}
+\fi
+
+\subsection{Security Requirements}
+\label{sec:SR}
+
+%For convenience, we re-iterate the security requirements (SRs) which our secured PARED protocol satisfies.
+
+%\parhead{SR1} A car should only unlock and start when the user has an authentic fob that is paired with the car.
+%\iflong
+%\begin{itemize}
+%	\item Unlock Car 1 with an UPFOB: \flag{newcar\_*}
+%\end{itemize}
+%\fi
+
+%\parhead{SR2} Revoking an attacker's physical access to a fob should also revoke their ability to unlock the associated car.
+%\iflong
+%\begin{itemize}
+%	\item Protected PFOB access, disable at time $t$, then Protected UPFOB access
+%	\item Unlock Car 2 with temporary PFOB access: \flag{tempfobaccess\_*}
+%\end{itemize}
+%\fi
+
+%\parhead{SR3} Observing the communications between a fob and a car while unlocking should not allow an attacker to unlock the car in the future.
+%\iflong
+%\begin{itemize}
+%	\item Protected UPFOB access
+%	\item Recorded 3 unlock transactions between a paired fob and a car
+%	\item Unlock Car 3 with passive replay attacks: \flag{passiveunlock\_*}
+%\end{itemize}
+%\fi
+
+%\parhead{SR4} Having an unpaired fob should not allow an attacker to unlock a car without the corresponding paired fob and pairing PIN.
+%\iflong
+%\begin{itemize}
+%	\item Protected UPFOB access and leaked pairing PIN for Car 4
+%	\item Unlock Car 4 with just the PIN: \flag{leakedpin\_*}
+%	\item Protected PFOB, UPFOB access for Car 5
+%	\item Extract the pairing PIN from Car 5: \flag{pinextract\_*}
+%\end{itemize}
+%\fi
+
+%\parhead{SR5} A car owner should not be able to add new features to a fob that did not get packaged by the manufacturer.
+
+%\parhead{SR6} Access to a feature packaged for one car should not allow an attacker to enable the same feature on another car.
+%\iflong
+%\begin{itemize}
+%	\item Protected PFOB, UPFOB access for Car 5
+%	\item Unlocking Car 5 is out of scope
+%	\item Packaged Feature 2 for Cars 0-4
+%	\item Enable Feature 2 for Car 5: \flag{feature2\_*} 
+%\end{itemize}
+%\fi
+
+%See \Cref{sec:build}--\ref{sec:unlock} for a description of how our modified PARED protocol satisfies each SR. With the threat model defined, we now describe the cryptographic primitives which provide assurances of security in this scenario.
+
+%\iflong
+%\textit{NOTE: Car 0 contains no flags, but \emph{does} provide the unprotected images for the car and paired fob. %, as well as a protected unpaired fob, paired fob, car, and PIN.
+%With these capabilities, we expect that attackers can analyze our implementation for vulnerabilities.}
+%\fi

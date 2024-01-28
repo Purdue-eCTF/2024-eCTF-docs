@@ -15,8 +15,8 @@
 %   content if short version (excludes comments and other things we don't want to reveal to other teams)
 % \fi
 \newif\iflong
-%\longtrue
-\longfalse
+\longtrue
+%\longfalse
 % TODO: CHANGE ^ TO \longfalse BEFORE SUBMISSION TO ORGANIZERS
 
 %%% Common template packages (must come before macros.tex)
@@ -28,7 +28,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % DEFINE AUTHOR COMMENTS HERE (xcolor names allowed) -- replace color and signature
 %-------------------------------------------------------------------
-\newcommand{\jw}[1]{\iflong\textcolor{purple}{#1 --JW}\fi}
+\newcommand{\jw}[1]{\iflong\textcolor{Purple}{#1 --JW}\fi}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %\newcommand{\TODO}[1]{\par \noindent \textbf{\underline{TODO:}}\vspace#1}
 %\newcommand{\NOTE}[1]{\par \noindent \textbf{NOTE:}\space#1}
@@ -45,6 +45,9 @@
 \jw{This is a comment. Ctrl+F \texttt{main.tex} to find how do fefine one yourself. Replace color and signature if you want one too.}
 
 \jw{For each section, use a new file to make merge conflicts / collab less annoying. e.g. see \texttt{intro.tex} for introduction}
+
+\hl{blah blah this is a comment}
+
 \input{intro.tex}
 
 \input{threat_model.tex}

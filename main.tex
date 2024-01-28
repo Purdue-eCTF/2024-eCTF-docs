@@ -10,14 +10,14 @@
 
 % Usage:
 % \iflong
-%   content if long version
+%   content if long version (includes comments etc. for internal reference)
 % \else
-%   content if short version
+%   content if short version (excludes comments and other things we don't want to reveal to other teams)
 % \fi
 \newif\iflong
 %\longtrue
 \longfalse
-% TODO: CHANGE ^ TO \longfalse BEFORE SUBMISSION
+% TODO: CHANGE ^ TO \longfalse BEFORE SUBMISSION TO ORGANIZERS
 
 %%% Common template packages (must come before macros.tex)
 \input{imports.tex}
@@ -26,9 +26,9 @@
 \input{macros.tex}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Author comments go here (xcolor allowed)
+% DEFINE AUTHOR COMMENTS HERE (xcolor names allowed) -- replace color and signature
 %-------------------------------------------------------------------
-\newcommand{\jw}[1]{\textcolor{blue}{#1}}
+\newcommand{\jw}[1]{\iflong\textcolor{purple}{#1 --JW}\fi}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %\newcommand{\TODO}[1]{\par \noindent \textbf{\underline{TODO:}}\vspace#1}
 %\newcommand{\NOTE}[1]{\par \noindent \textbf{NOTE:}\space#1}
@@ -42,22 +42,18 @@
 \begin{document}
 \maketitle
 
-\jw{This is a comment. Ctrl+F for this command, replace color and signature if you want one too. -- JW}
+\jw{This is a comment. Ctrl+F \texttt{main.tex} to find how do fefine one yourself. Replace color and signature if you want one too.}
 
-\input{intro}
+\jw{For each section, use a new file to make merge conflicts / collab less annoying. e.g. see \texttt{intro.tex} for introduction}
+\input{intro.tex}
 
-\input{threat_model}
+\input{threat_model.tex}
 
-\input{primitives}
+\input{primitives.tex}
 
-\input{build}
+\input{build.tex}
 
-% TODO: Functionality-specific functionality and security met
-
-\iflong
-\input{analysis}
-\fi
-
+% TODO: Functionality-specific descriptions, and security analysis to describe how we meet these requirements
 
 \newpage
 \bibliographystyle{alpha}

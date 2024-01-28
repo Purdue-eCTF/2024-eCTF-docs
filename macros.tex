@@ -1,16 +1,4 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%   Created By:     Jacob White
-%   Email:          white570@purdue.edu
-%
-%   Sources of inspiration:
-%       - Christina Garman's Practical & Applied Cryptography midterm template
-%       - Reed Oei's math homework template (https://github.com/ReedOei/LaTeX)
-%       - K A Gillow's University of Oxford, Mathematical Institute LaTeX Problem Sheet (https://www.maths.ox.ac.uk/members/it/faqs/latex/problem-sheets)
-%       - Sources for specific commands may be referenced inline.
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Paper-specific macros go here...
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -25,19 +13,10 @@
 % ectf{...}
 \newcommand{\flag}[1]{\texttt{ectf\{#1\}}}
 \newcommand{\pin}{\ensuremath{\mathsf{PIN}}\xspace}
-\newcommand{\carid}{\ensuremath{\mathsf{CID}}\xspace}
-\newcommand{\featid}{\ensuremath{\mathsf{FID}}\xspace}
-% pkgs _CarID[#1]
-\newcommand{\pkgs}[1]{\ensuremath{\mathsf{pkgs}_{#1}}\xspace}
-\newcommand{\enckey}{\ensuremath{K}\xspace}
-% pkg _CarID[#1] ^(FeatureNum[#2])
-\newcommand{\pkg}[2]{\ensuremath{\mathsf{pkg}_{#1}^{(#2)}}\xspace}
-% fpwd _ CarID[#1] ^(FeatureNum[#2])
-\newcommand{\featpwd}[2]{\ensuremath{\mathsf{fpwd}_{#1}^{(#2)}}\xspace}
-% F _CarID[#1]
-\newcommand{\featlist}[1]{\ensuremath{F_{#1}}\xspace}
+\newcommand{\tok}{\ensuremath{\mathsf{token}}\xspace}
+\newcommand{\compid}{\ensuremath{\mathsf{ID}}\xspace}
 
-\SetKw{Continue}{continue}
+%\SetKw{Continue}{continue}
 
 \NewDocumentCommand{\mysendmessageleft}{m}{%
   \sendmessage{<-,inner sep=0pt}{
@@ -52,60 +31,7 @@
   }%
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-% Substack with alignment point for subscript https://tex.stackexchange.com/questions/198771/align-in-substack
-\makeatletter
-\newcommand{\subalign}[1]{%
-  \vcenter{%
-    \Let@ \restore@math@cr \default@tag
-    \baselineskip\fontdimen10 \scriptfont\tw@
-    \advance\baselineskip\fontdimen12 \scriptfont\tw@
-    \lineskip\thr@@\fontdimen8 \scriptfont\thr@@
-    \lineskiplimit\lineskip
-    \ialign{\hfil$\m@th\scriptstyle##$&$\m@th\scriptstyle{}##$\hfil\crcr
-      #1\crcr
-    }%
-  }%
-}
-\makeatother
-
-%%% Change hyperref's colors
-%\hypersetup{            
-%  colorlinks=true,
-%  linkcolor=black,   % internal links (e.g. equation and theorem labels)
-%  urlcolor=cyan,     % \hyperref and \url
-%  filecolor=red,
-%  citecolor=black,
-%}
-
-%%% Change color of footnote links to black
-%\renewcommand{\thefootnote}{\textcolor{black}{\arabic{footnote}}}
-
-%\newcommand\mycommfont[1]{\footnotesize\ttfamily\textcolor{blue}{#1}}
-%\SetCommentSty{mycommfont}
-%%% From: https://en.wikibooks.org/wiki/LaTeX/Source_Code_Listings#Automating_file_inclusion
-\newcommand{\includecode}[3][c]{\lstinputlisting[
-  language=#1,
-  caption=#2,
-  basicstyle=\normalsize\ttfamily,
-  breaklines=true,
-  postbreak=\mbox{\textcolor{red}{$\hookrightarrow$}\space}
-]{#3}}
 
 \newcommand{\cmark}{\ding{51}}%
 \newcommand{\xmark}{\ding{55}}%
@@ -115,47 +41,11 @@
 %%%%%%%%%%%%%%%%%%%
 
 %%% General Arithmetic
-\newcommand{\nthroot}[2]{\ensuremath{\sqrt[\leftroot{-1}\uproot{1}\scriptstyle #1]{#2}}}
 \newcommand{\abs}[1]{\ensuremath{\left| #1 \right|}\xspace}
-\newcommand{\norm}[1]{\ensuremath{\left\lVert #1 \right\rVert}\xspace}
-\newcommand{\innerprod}[2]{\ensuremath{\left\langle #1,#2 \right\rangle}\xspace}
-\newcommand{\fracinv}[1]{\ensuremath{\frac1{#1}}\xspace}
-\newcommand{\half}{\fracinv{2}}
-\newcommand{\third}{\fracinv{3}}
-\newcommand{\addinv}[1]{\ensuremath{-{#1}}\xspace}
-\newcommand{\pseudoinv}[1]{\ensuremath{{#1}^{\!+}}\xspace}
-\newcommand{\multinv}[1]{\ensuremath{{#1}^{-1}}\xspace}
-\newcommand{\inverse}[1]{\multinv{#1}}
-\newcommand{\kron}[2]{\ensuremath{\delta_{#1\,#2}}\xspace}
 
 %%% Linear Algebra
-% NOTE: Kernel and nullspace are equivalent in linear algebra, but not in other domains (e.g., machine learning). If both Math and CS are relevant, use nullspace.
-%\DeclareMathOperator{\Ker}{Ker}
-\DeclareMathOperator{\nullspace}{null}
-%\DeclareMathOperator{\nullspace}{\Ker}
-\DeclareMathOperator{\trace}{tr}
-\DeclareMathOperator{\rank}{rank}
-\DeclareMathOperator{\range}{range}
-\newcommand{\directsum}{\mathbin{\oplus}}
-\newcommand{\cupdot}{\mathbin{\mathaccent\cdot\cup}}
-%\newcommand{\cupdisjoint}{\sqcup}
-\newcommand{\cupdisjoint}{\cupdot}
-\newcommand{\orthogonal}{\mathbin{\bot}}
-\newcommand{\transpose}[1]{\ensuremath{{#1}^\top}\xspace}
-\newcommand{\trans}[1]{\transpose{#1}}
-\newcommand{\orthotranspose}[1]{\ensuremath{{#1}^\bot}\xspace}
-\newcommand{\orthotrans}[1]{\orthotranspose{#1}}
-%%% Complex Conjugate transpose -- ^* or ^H for Linear Algebra, dagger for quantum mechanics
-%\newcommand{\cctranspose}[1]{\ensuremath{{#1}^*}\xspace}
-%\newcommand{\cctranspose}[1]{\ensuremath{{#1}^H}\xspace}
-\newcommand{\cctranspose}[1]{\ensuremath{{#1}^\dagger}\xspace}
-\newcommand{\cctrans}[1]{\cctranspose{#1}}
 \renewcommand{\vec}[1]{\ensuremath{\mathbf{#1}}\xspace}
 %\renewcommand{\vec}[1]{\ensuremath{\overrightarrow{#1}}}
-\newcommand{\mat}[1]{\ensuremath{\mathbf{#1}}\xspace}
-\newcommand{\eigenval}{\ensuremath{\lambda}\xspace}
-\newcommand{\sv}{\ensuremath{\sigma}\xspace}
-
 
 %%% Groups, Fields, and Rings
 \newcommand{\group}{\ensuremath{\mathbb{G}}\xspace}
@@ -182,10 +72,6 @@
 
 \newcommand{\field}{\ensuremath{\mathbb{F}}\xspace}
 \newcommand{\F}{\field}
-\newcommand{\ring}{\ensuremath{\mathcal{R}}\xspace}
-\newcommand{\rng}{\ring}
-
-\newcommand{\inftypt}{\ensuremath{\mathcal{O}}\xspace}
 
 
 %%% Set notation
@@ -214,30 +100,10 @@
 \renewcommand{\approx}{\raise.17ex\hbox{\ensuremath{\scriptstyle\sim}}}
 %%% Relations-checking operators
 \newcommand{\iseq}{\overset{?}{=}}
-\newcommand{\isequiv}{\overset{?}{\equiv}}
-\newcommand{\iscong}{\overset{?}{\cong}}
-\newcommand{\isiso}{\overset{?}{\iso}}
-\newcommand{\isapprox}{\overset{?}{\approx}}
-\newcommand{\issim}{\overset{?}{\isapprox}}
-\newcommand{\issimeq}{\overset{?}{\simeq}}
-\newcommand{\isdoteq}{\overset{?}{\doteq}}
 \newcommand{\islt}{\overset{?}{<}}
 \newcommand{\isgt}{\overset{?}{>}}
 \newcommand{\isleq}{\overset{?}{\leq}}
 \newcommand{\isgeq}{\overset{?}{\geq}}
-\newcommand{\issubset}{\overset{?}{\subset}}
-\newcommand{\issupset}{\overset{?}{\supset}}
-\newcommand{\issubsetq}{\overset{?}{\subseteq}}
-\newcommand{\issupsetq}{\overset{?}{\supseteq}}
-\newcommand{\isprec}{\overset{?}{\prec}}
-\newcommand{\ispreceq}{\overset{?}{\preceq}}
-\newcommand{\issucc}{\overset{?}{\succ}}
-\newcommand{\issucceq}{\overset{?}{\succeq}}
-%\newcommand{\isposdef}{\overset{?}{\posdef}}
-%\newcommand{\ispossemidef}{\overset{?}{\possemidef}}
-\newcommand{\ispropto}{\overset{?}{\propto}}
-\newcommand{\isin}{\overset{?}{\in}}
-
 
 %%% Statistics
 % NOTE: default for \Pr is Pr
@@ -249,27 +115,6 @@
 \DeclareMathOperator{\Prob}{\mathbb{P}}
 %\DeclareMathOperator{\Prob}{P}
 \DeclareMathOperator{\Var}{Var}
-\DeclareMathOperator{\Covar}{Cov}
-\DeclareMathOperator*{\Max}{\max}
-\DeclareMathOperator*{\Min}{\min}
-% NOTE: This is the same thing as the Universal Set
-\newcommand{\samplespace}{\ensuremath{\Omega}\xspace}
-\newcommand{\eventspace}{\ensuremath{\mathcal{F}}\xspace}
-\newcommand{\probspace}{\ensuremath{(\samplespace, \eventspace, \Prob)}\xspace}
-\newcommand{\sample}{\ensuremath{\omega}\xspace}
-\newcommand{\event}{\ensuremath{E}\xspace}
-\newcommand{\cdf}{\ensuremath{F}\xspace}
-% NOTE: Technically this is pdf in continuous land but meh
-\newcommand{\pmf}{\ensuremath{p}\xspace}
-% NOTE: This is likely to conflict (both in macro and notation) with other things, e.g. digital signatures or state.
-\newcommand{\sd}{\ensuremath{\sigma}\xspace}
-%\newcommand{\sd}{\ensuremath{\var{sd}}\xspace}
-%\newcommand{\corr}{\ensuremath{\rho}\xspace}
-\newcommand{\corr}{\ensuremath{r}\xspace}
-\newcommand{\covarmat}{\ensuremath{\Sigma}\xspace}
-\newcommand{\likelihood}{\ensuremath{\mathcal{L}}\xspace}
-%%% Calculus
-\newcommand{\approaches}{\mathbin{\rightarrow}}
 
 %%%%%%%%%%%%%%%%%%%
 % CS Macros       %
@@ -281,37 +126,19 @@
 %\newcommand{\true}{\var{T}}
 %\newcommand{\false}{\var{F}}
 %\newcommand{\boolset}{\set{\true,\false}}
-\newcommand{\true}{1}
-\newcommand{\false}{0}
-\newcommand{\boolset}{\bitset}
-\renewcommand{\implies}{\mathbin{\longrightarrow}}
 \newcommand{\bitset}{\set{0,1}}
+\newcommand{\boolset}{\bitset}
 \newcommand{\bitsset}[1][*]{\ensuremath{\bitset^{#1}}\xspace}
+\renewcommand{\implies}{\mathbin{\longrightarrow}}
 \newcommand{\addeq}{\ensuremath{+=}\xspace}
 \newcommand{\subeq}{\ensuremath{-=}\xspace}
-\newcommand{\muleq}{\ensuremath{*=}\xspace}
-\newcommand{\diveq}{\ensuremath{/=}\xspace}
 \newcommand{\defeq}{\coloneqq}
 \newcommand{\eqdef}{=:}
 \newcommand{\nil}{\ensuremath{\var{nil}}\xspace}
 \newcommand{\error}{\ensuremath{\bot}\xspace}
-\newcommand{\ignored}{{\ensuremath{\,\cdot\,}}}
-\newcommand{\codecomment}[1]{{\footnotesize // #1}}
 \newcommand{\varlist}[1]{\ensuremath{\overline{#1}}\xspace}
 
-%%% Complexity Theory
-\newcommand{\mapreducesto}{\leq_m}
-\newcommand{\mapreducesfrom}{\geq_m}
-\newcommand{\mapequiv}{\equiv_m}
-\newcommand{\polyreducesto}{\leq_P}
-\newcommand{\polyreducesfrom}{\geq_P}
-\newcommand{\polyequiv}{\equiv_P}
-\newcommand{\logspacereducesto}{\leq_L}
-\newcommand{\logspacereducesfrom}{\geq_L}
-\newcommand{\logspaceequiv}{\equiv_L}
 %%% Computation theory
-\newcommand{\yields}{\rightarrow_M}
-\newcommand{\yieldsto}[1][*]{\ensuremath{\overset{#1}{\rightarrow}_M}\xspace}
 \newcommand{\blanksymbol}{\ensuremath{%
   \ooalign{%
     \relax\cr%
@@ -328,49 +155,15 @@
 \newcommand{\reduces}{\derives}
 \newcommand{\derivesto}[1][*]{\mathbin{\overset{#1}{\rightarrow}}}
 \newcommand{\reducesto}{\derivesto}
-\newcommand{\partreducesto}{\mathbin{\rightharpoonup}}
-\newcommand{\evaluatesto}{\mathbin{\Downarrow}}
-\newcommand{\subtypeof}{\mathbin{<:}}
-\newcommand{\assumedby}{\mathbin{\vdash}}
-\newcommand{\syntaxeq}{\mathbin{::=}}
-\newcommand{\state}{\ensuremath{\sigma}\xspace}
-\newcommand{\heap}{\ensuremath{\heta}\xspace}
-\newcommand{\locmap}{\ensuremath{\zeta}\xspace}
 %%% From: https://tex.stackexchange.com/questions/41357/replace-cmtt10-char32-visible-cup-space-with-something-more-gentle/41445#41445
 \newcommand{\emptystring}{\ensuremath{\epsilon}\xspace}
 \newcommand{\emptysymbol}{\emptystring}
-\newcommand{\langconcat}{\mathbin{\circ}}
 \newcommand{\any}[1]{{#1}^*}
 \newcommand{\kleenestar}[1]{\any{#1}}
 \newcommand{\strconcat}{\mathbin{\Vert}}
 \newcommand{\concat}{\strconcat}
-%%% Graphs
-\newcommand{\pathto}{\mathbin{\rightsquigarrow}}
-\newcommand{\dirpath}{\pathto}
-\newcommand{\dirpathto}{\pathto}
-\newcommand{\undirpath}{\mathbin{\leftrightsquigarrow}}
-\newcommand{\undirpathto}{\undirpath}
-\newcommand{\undirpathfrom}{\undirpath}
-\newcommand{\walkto}{\mathbin{\looparrowright}}
-\newcommand{\walkfrom}{\mathbin{\looparrowleft}}
-\newcommand{\indeg}{\deg_{-}}
-\newcommand{\outdeg}{\deg_{+}}
 %%% Cryptography
-%\newcommand{\secparam}{\ensuremath{\lambda}\xspace}
-\newcommand{\crs}{\var{crs}}
-\newcommand{\rel}[1]{\ensuremath{R_{\mathsf{#1}}}\xspace}
-% TODO: Think of something better
-\newcommand{\com}{\ensuremath{\var{com}}\xspace}
-\newcommand{\sign}{\ensuremath{\sigma}\xspace}
-\newcommand{\pf}{\ensuremath{\pi}\xspace}
-\newcommand{\user}{\ensuremath{U}\xspace}
-\newcommand{\verifier}{\ensuremath{V}\xspace}
-\newcommand{\simulator}{\ensuremath{\mathcal{S}}\xspace}
 \newcommand{\adversary}{\ensuremath{\mathcal{A}}\xspace}
-\newcommand{\aux}{\ensuremath{\var{aux}}\xspace}
-\newcommand{\context}{\ensuremath{\var{ctx}}\xspace}
-\newcommand{\pairingparams}{\ensuremath{\var{pp}}\xspace}
-
 
 %%%%%%%%%%%%%%%%%%%
 % Theorems etc.   %
@@ -416,4 +209,3 @@
 %%% NOTE: \wlog is a logging command and can't be redefined
 \newcommand{\WLOG}{\xspace{without loss of generality}\xspace}
 \newcommand{\Wlog}{\xspace{Without loss of generality}\xspace}
-\newcommand{\str}[1]{\ifmmode{\mathstrut\text{#1}}\else\mbox{\strut#1}\fi}

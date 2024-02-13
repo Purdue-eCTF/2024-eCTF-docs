@@ -2,8 +2,8 @@
 % Paper-specific macros go here...
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\newcommand{\enc}{\ensuremath{\mathsf{Enc}}\xspace}
-\newcommand{\dec}{\ensuremath{\mathsf{Dec}}\xspace}
+%\newcommand{\enc}{\ensuremath{\mathsf{Enc}}\xspace}
+%\newcommand{\dec}{\ensuremath{\mathsf{Dec}}\xspace}
 \renewcommand{\H}{\ensuremath{\mathsf{H}}\xspace}
 
 \newcommand{\seed}{\ensuremath{S}\xspace}
@@ -13,8 +13,36 @@
 % ectf{...}
 \newcommand{\flag}[1]{\texttt{ectf\{#1\}}}
 \newcommand{\pin}{\ensuremath{\mathsf{PIN}}\xspace}
-\newcommand{\tok}{\ensuremath{\mathsf{token}}\xspace}
+\newcommand{\apin}{\ensuremath{\mathsf{APIN}}\xspace}
+\newcommand{\data}{\ensuremath{\mathsf{DATA}}\xspace}
+\newcommand{\adata}{\ensuremath{\mathsf{ADATA}}\xspace}
+\newcommand{\tok}
+{\ensuremath{\mathsf{token}}\xspace}
+\newcommand{\rtok}
+{\ensuremath{\mathsf{RTok}}\xspace}
 \newcommand{\compid}{\ensuremath{\mathsf{ID}}\xspace}
+\newcommand{\provcid}{\ensuremath{\mathsf{ProvCID}}\xspace}
+\newcommand{\cid}{\ensuremath{\mathsf{CID}}\xspace}
+\newcommand{\actual}{\ensuremath{\mathsf{actual}}\xspace}
+\newcommand{\salt}{\ensuremath{\mathsf{salt}}\xspace}
+\newcommand{\attest}{\ensuremath{\mathsf{Attest}}\xspace}
+\newcommand{\listfunction}{\ensuremath{\mathsf{List}}\xspace}
+\newcommand{\replace}{\ensuremath{\mathsf{Replace}}\xspace}
+\newcommand{\boot}{\ensuremath{\mathsf{Boot}}\xspace}
+\newcommand{\msg}
+{\ensuremath{\mathsf{Msg}}\xspace}
+\newcommand{\Enc}{\ensuremath{\mathsf{Enc}}\xspace}
+\newcommand{\Dec}{\ensuremath{\mathsf{Dec}}\xspace}
+\newcommand{\MAC}{\ensuremath{\mathsf{MAC}}\xspace}
+\newcommand{\HMAC}{\ensuremath{\mathsf{HMAC}}\xspace}
+\newcommand{\sk}{\ensuremath{\mathsf{sk}}\xspace}
+\newcommand{\Sign}{\ensuremath{\mathsf{Sign}}\xspace}
+\newcommand{\Ver}{\ensuremath{\mathsf{Ver}}\xspace}
+\newcommand{\msk}{\ensuremath{msk}\xspace}
+\newcommand{\mvk}{\ensuremath{mvk}\xspace}
+\newcommand{\nonce}{\ensuremath{\mathsf{nonce}}\xspace}
+\newcommand{\rng}{\ensuremath{\mathsf{TRNG}}\xspace}
+\newcommand{\trng}{\ensuremath{\mathsf{TRNG}}\xspace}
 
 %\SetKw{Continue}{continue}
 
@@ -41,7 +69,7 @@
 %%%%%%%%%%%%%%%%%%%
 
 %%% General Arithmetic
-\newcommand{\abs}[1]{\ensuremath{\left| #1 \right|}\xspace}
+\renewcommand{\abs}[1]{\ensuremath{\left| #1 \right|}\xspace}
 
 %%% Linear Algebra
 \renewcommand{\vec}[1]{\ensuremath{\mathbf{#1}}\xspace}
@@ -76,7 +104,7 @@
 
 %%% Set notation
 \newcommand{\powerset}[1]{\ensuremath{\mathcal{P}(#1)}\xspace}
-\newcommand{\set}[1]{\ensuremath{\left\{ #1 \right\}}\xspace}
+\renewcommand{\set}[1]{\ensuremath{\left\{ #1 \right\}}\xspace}
 %%% NOTE: Change if you prefer colon or vertical bar (\mid) for suchthat
 %\newcommand{\suchthat}{\mathbin{:}}
 \newcommand{\suchthat}{\mathbin{\mid}}
@@ -156,12 +184,12 @@
 \newcommand{\derivesto}[1][*]{\mathbin{\overset{#1}{\rightarrow}}}
 \newcommand{\reducesto}{\derivesto}
 %%% From: https://tex.stackexchange.com/questions/41357/replace-cmtt10-char32-visible-cup-space-with-something-more-gentle/41445#41445
-\newcommand{\emptystring}{\ensuremath{\epsilon}\xspace}
+\renewcommand{\emptystring}{\ensuremath{\epsilon}\xspace}
 \newcommand{\emptysymbol}{\emptystring}
 \newcommand{\any}[1]{{#1}^*}
 \newcommand{\kleenestar}[1]{\any{#1}}
 \newcommand{\strconcat}{\mathbin{\Vert}}
-\newcommand{\concat}{\strconcat}
+\renewcommand{\concat}{\strconcat}
 %%% Cryptography
 \newcommand{\adversary}{\ensuremath{\mathcal{A}}\xspace}
 
@@ -197,7 +225,7 @@
 \ifdefined\remark\else\newtheorem*{remark}{Remark}\fi
 
 % Modifies the enumerate* to use 1) 2) 3) by default
-\newlist{enumerate*}{enumerate*}{1}
+\renewlist{enumerate*}{enumerate*}{1}
 \setlist[enumerate*]{label=\arabic*)}
 
 %%%%%%%%%%%%%%%%%%%

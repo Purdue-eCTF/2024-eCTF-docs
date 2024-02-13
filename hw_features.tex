@@ -1,2 +1,33 @@
-%\subsection{Hardware Security Features}
-%\label{sec:hw-features}
+\section{Hardware Specifications and Security Features}
+\label{sec:hw-features}
+
+\jw{TODO (not me lol): Basic hardware description and features here -- what do we have to work with on the board that's relevant to our design?}
+\jw{this is all I know how to talk about, I know next to nothing about this board but that's the high level :). Someone please add more details here about the board itself if you know what to talk about.}
+
+Due to the concerns of attackers having physical access to the board while it executes, we are actively seeking out a number of hardware security protections and countermeasures that we will put in place to help ``harden'' the embedded system against side-channel, injection, and other hardware attacks:
+\begin{itemize}
+    \item Leverage both the true random number generator (TRNG) provided by the board as well as other potential high-entropy sources of randomness to serve as a seed for cryptographically secure pseudo-random number generators, helping to ensure the highest "quality" of randomness possible for all relavent cryptographic algorithms;
+    \item Implement ASLR-like layout randomization by randomizing offsets in the firmware binary in order to make it harder to perform attacks on our system;
+    \item Implement and audit for constant-time implementations of our firmware as well as cryptographic and other downstream-dependant libraries to ensure that it will be harder to notice e.g. what variance in time across different guesses at a secret value (such as a cryptographic key) can reveal about its correctness;
+    \item Protect against fault injections, instruction skipping, clock glitching, and other similar measures which attackers might leverage in an attempt to bypass security checks; and
+    if time alows, construct our own physically unclonable function (PUF) which essentially identify/fingerprint boards based on the variances in the manufacture of individual hardware components.
+\end{itemize}
+
+One outstanding issue we have yet to fully resolve is \hl{where to securely store secret data} (e.g. cryptographic key material) on the board. Storing them in flash memory is one potential option, especially since these secrets may hardly need to be re-written (if ever), but we are in the process of exploring the viability of flash memory for this purpose, as well as other potential options for securely storing private information on the board.
+
+%% Hardware threat model 
+% ===================================================
+% Basically list all the potential inputs in this case
+% What all ports are available on the board?
+%% Some of the common areas we need to protect against
+% ====================================================
+% Fault Injections (Need to have additional failsafes, to prevent simple fault injections)
+%% Some background reading: https://research.nccgroup.com/2021/07/08/software-based-fault-injection-countermeasures-part-2-3/
+% https://www.trustedfirmware.org/docs/TF-M_fault_injection_mitigation.pdf
+%% We can go fancy later
+% Constant time implementations for all checks (to avoid Side Channel leakage)
+% Need to make sure that our RNG is the strongest thing that we can make, can we have a special development team for that?
+% Every security measure we have is just gonna be dependent on the RNG in the end. So we test that first. 
+% Defenses that against FI
+% Double/Triple/N number of checks to detect inconsitency
+% Add a small random delay after check to confuse

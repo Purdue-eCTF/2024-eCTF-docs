@@ -1,0 +1,102 @@
+\subsection{Attestation Protocol}
+
+The attestation protocol provides a method to request attestation data from a given component on the MISC through the AP in order to validate the credibility of the component. The caller provides a private Attestation PIN (abbr. APIN) and the ID of the Component to attest (abbr. CID). Our protocol will follow this general outline:
+\begin{enumerate}
+    \item The AP first hashes the provided APIN, and checks it against its stored, hashed APIN.
+    \begin{enumerate}
+        \item If they do not match, sleep for 3 seconds, print \texttt{E!Attest failed!\textbackslash n} and exit.
+        \item If they do match, the check succeeds, the AP records the start time, and the protocol continues.
+    \end{enumerate}
+    \item Next, the AP sends \texttt{ATTEST\_REQ} over I2C, followed by the CID, a randomly generated nonce, and the AP's MAC of these values.
+    \item Components listening on the I2C channel will receive the \texttt{ATTEST\_REQ}, and will then check the accompanying CID, checking it against its own ID. If they match, this component (the intended component) will continue with the protocol; otherwise, it will display an error message and abort.
+    \item The intended component will then attempt to verify the MAC. If it passes, the component will string together the attestation data as well as a randomly generated value with a specified length to protect against known or chosen plaintext attacks, all delineated by \hl{???} \jaxson{null byte maybe? idk} \jimmy{I don't think this is necessary (even if it is, I'd say this is more of an implementation detail).}
+    \item This long string will then be symmetrically encrypted using the secret key that was administered during the build stage, and sent over I2C prefixed with \texttt{ATTEST\_RESP}.
+    \item The AP will listen for the \texttt{ATTEST\_RESP} and receive the ciphertext, which it will then decrypt using its own identical secret key, extract the attestation data, and print it in the following format:
+    \begin{verbatim}
+        C>0x{CID}\n
+        LOC>{Attestation location}\n
+        DATE>{Attestation date}\n
+        CUST>{Attestation customer}\n
+        Attest\n\end{verbatim}
+    \item Finally, the AP will record the end time of the protocol, and sleep for a certain amount of time so the total execution time remains and is equal to 3 seconds (i.e., $3s - (\text{end time} - \text{start time})$) in order to mitigate timing and brute force attacks.
+\end{enumerate}
+
+\jaxson{TODO how are we doing HMAC verification? AP HMAC stored in component's secure storage maybe?} 
+\jimmy{Good point, will get back to this soon later.}
+\jimmy{Actually no. The component will have to compute HMAC with the given CID and nonce. The whole point of MAC is to make sure the message was not tampered with and so this is more than sufficient. We can also check if the message actually came from the real AP because the secret key that we are computing MAC with will serve as some sort of the certificate. Also it doesn't make much sense to have HMAC stored in component, because nonce will be changing. }
+
+The procedure described above can be abstracted into an algorithmic diagram shown below.
+
+\jw{TODO: Generally with crypto protocols we should be careful about borrowing the same secret key / SK for using in 2 different primitives (here, Encryption and MAC). There's times this might be fine, but we need to sanity check this later.}
+
+\jw{TODO: switch TRNG to PRNG probably (TRNG just being used to seed it on boot time)}
+
+\jw{TODO: Avoid timing attacks on Component end too}
+
+\jw{TODO: What's stopping malicious AP from just ignoring the PIN check and sending the request to the AP anyway? We need AP validation here too before sending over $c$.}
+
+\begin{pcimage}
+\pcb{$\attest(\pin, \cid)$}{
+\> \> \\
+\textbf{Application Processor} \> \text{(I2C channel)} \hspace{1.2cm} \> \textbf{Component}
+\\[0.1\baselineskip][\hline] \\[-0.5\baselineskip]
+h \gets H(\pin \| \salt ) \> \> \\
+\pcif h = H(\apin \| \salt) \pcthen \> \> \\
+\t \text{start} \gets \text{getTime()} \> \> \\
+\t \tau \gets \HMAC_{\sk}(\cid \| \nonce) \> \> \\
+\> \sendmessageright*{{\texttt{ATTEST\_REQ} \atop \cid, \nonce, \tau}} \> \\
+\> \> \text{Verify } \cid = \cid_{\actual} \\
+\> \> \text{ and } \HMAC_{\sk}(\cid \| \nonce) = \tau \\
+\> \> \pcif \text{they both match} \pcthen \\
+\> \> \t r \sample \rng() \\
+\> \> \t c \gets \Enc_{\sk}(\adata \| r) \\
+\> \> \t \pcreturn c \\
+\> \> \pcelse \pcdo \\
+\> \> \t \text{print } \text{``suspicious activity detected''} \\
+\> \> \t \text{break}() \\
+\> \sendmessageleft*{{ \texttt{ATTEST\_RESP} \atop c}}  \> \\
+\t \adata \| r\gets \Dec_{\sk}(c) \> \>  \\
+\t \text{print } \adata \> \> \\
+\t \text{end} \gets \text{getTime()} \>\> \\
+\t \text{sleep}(3s - (\text{end} - \text{start})) \\
+\t \pcreturn \adata \\
+\pcelse \pcdo \\
+\t \text{sleep}(3s) \\
+\t \text{print } \text{``attestation failed''} \\
+\t \pcreturn 0
+}
+\end{pcimage}
+
+\jimmy{Does every component have a different key for the AP that they are associated with? If so, what are the benefits of having different keys (over having the same key across all components)?}
+% \begin{pcimage}
+% \pcb{$\attest(\pin, \cid)$}{
+% \> \> \\
+% \textbf{Application Processor} \> \text{(I2C channel)} \hspace{1.2cm} \> \textbf{Component}
+% \\[0.1\baselineskip][\hline] \\[-0.5\baselineskip]
+% h \gets H(\pin \| \salt ) \> \> \\
+% \pcif h = H(\apin \| \salt) \pcthen \> \> \\
+% \t \text{start} \gets \text{getTime()} \> \>  \\
+% \t \tau \gets \MAC_{\sk}(\cid \| \nonce) \> \> \\
+% \textit{(Invoke Challenge-Response)} \> \sendmessageright*{{\texttt{ATTEST\_REQ} \atop \cid, \nonce, \tau}} \> \\
+% \> \> 
+% \dbox{\begin{subprocedure}\procedure{Challenge-Response (C-R)}{ 
+% \text{Confirm } \cid = \cid_{\actual} \\
+% \text{ and } \MAC_{\sk}(\cid \| \nonce) = \tau \\
+% \pcif \text{they both match} \pcthen \\
+% \t r \sample \rng() \\
+% \t c \gets \Enc_{\sk}(\adata \| r) \\
+% \pcelse \pcdo \\
+% \t \text{print } \text{``suspicious activity detected''} \\
+% \t \text{break}()
+% }\end{subprocedure}} \\
+% \> \sendmessageleft*{{ \texttt{ATTEST\_RESP} \atop c}}  \> \\
+% \t \adata \| r\gets \Dec_{\sk}(c) \> \>  \\
+% \t \text{print } \adata \> \> \\
+% \t \text{end} \gets \text{getTime()} \>\> \\
+% \t \text{sleep}(3s - (\text{end} - \text{start})) \\
+% \pcelse \pcdo \\
+% \t \text{sleep}(3s) 
+% }
+% \end{pcimage}
+
+

@@ -1,0 +1,37 @@
+\subsection{Replace Protocol}
+
+The replace protocol reprograms the AP for a new component, overwriting a previously provisioned component. The caller provides a private Replacement Token (abbr. RTok), the ID of the component to replace (abbr. CID\textsubscript{out}), and the ID of the new component (abbr. CID\textsubscript{in}). For an extra layer of security, AP and the component will each run a challenge-response session where one can verify oneself to the other, before actually replacing the old CID $\cid_{\textsf{out}}$ to the new one $\cid_{\textsf{in}}$. The algorithm below describes the entire process in detail. 
+
+\begin{pcimage}
+\pcb{$\replace(\rtok, \cid_{\textsf{in}}, \cid_{\textsf{out}})$}{
+\> \> \\
+\textbf{Application Processor} \> \text{(I2C channel)} \hspace{1.2cm} \> \textbf{Component}
+\\[0.1\baselineskip][\hline] \\[-0.5\baselineskip]
+\text{start} \gets \text{getTime}() \> \> \\
+\text{Verify } \rtok = \rtok_{\actual} \> \> \\
+\text{ and } \cid_{\textsf{out}} \in \provcid\text{'s} \> \> \\
+\pcif \text{False} \pcthen \> \> \\
+\t \text{end} \gets \text{getTime}() \> \> \\
+\t \text{sleep}(5s - (\text{end} - \text{start})) \> \> \\
+\t \pcreturn 0 \> \> \\
+\pcelse \pcdo \> \> \\
+\t r_A \sample \rng() \> \> \\ 
+\> \sendmessageright*{r_A} \> \\
+\> \> c_A \gets \Enc_{\sk}(r_A + 1) \\
+\> \> r_B \sample \rng() \\
+\> \sendmessageleft*{c_A, r_B} \> \\
+\t \text{Verify } \Dec_{\sk}(c_A) = r_A + 1 \> \> \\
+\t c_B \gets \Enc_{\sk}(r_B + 1) \\
+\> \sendmessageright*{r_B, c_B} \> \\
+\> \> \text{Verify } \Dec_{\sk}(c_B) = r_B + 1 \\
+\> \sendmessageleft*{\textit{``Verified''}} \> \\
+\t \provcid[\cid_{\textsf{out}}] \gets \cid_{\textsf{in}} \\
+\t \text{end} \gets \text{getTime}() \> \> \\
+\t \text{sleep}(5s - (\text{end} - \text{start})) \> \> \\
+\t \pcreturn \provcid \> \> 
+}
+\end{pcimage}
+
+\jw{TODO (FIX): Currently any Component who has SK (i.e., all components because it's a symmetric key) are able to authenticate themselves using Replace C-R protocol. This would let ANY validly built component (but perhaps not $\cid_{\textsf{in}}$! get replaced in, leading to any consistencies. Also, there's no checking to make sure $\cid_{\textsf{out}}$ is dead.}
+
+This satisfies the 5 second maximum timing requirements for $\replace$, assuming a time-out function is also employed. Similar to the attestation protocol, we are keeping the protocol sleep for a certain amount of time so the total runtime remains the same for every execution, to prevent any possible timing attacks. Also, if we store the \provcid list in persistent memory, this list of provisioned Component IDs will not change across power cycles as required. Lastly, while there are no security requirements directly related to the \replace protocol, a challenge-response protocol such as this allows the AP to verify that the Component being replaced is live and using the correct ID/address, and also \jw{(perhaps redundantly)} gives the Component a chance to check that it is being installed in a valid AP as well as consistent with \cite{eCTFOfficial}. Indeed, this same 2-way challenge-response to validate knowledge of the key \sk is similar to what will be used during the boot process as well. \jw{Is this true?}

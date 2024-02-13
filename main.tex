@@ -16,7 +16,7 @@
 % \fi
 \newif\iflong
 \longtrue
-%\longfalse
+% \longfalse
 % TODO: CHANGE ^ TO \longfalse BEFORE SUBMISSION TO ORGANIZERS
 
 %%% Common template packages (must come before macros.tex)
@@ -28,38 +28,62 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % DEFINE AUTHOR COMMENTS HERE (xcolor names allowed) -- replace color and signature
 %-------------------------------------------------------------------
-\newcommand{\jw}[1]{\iflong\textcolor{Purple}{#1 --JW}\fi}
+\newcommand{\jw}[1]{\iflong\textcolor{Purple}{#1 ---Jacob}\fi}
+\newcommand{\jimmy}[1] {\iflong\textcolor{blue!10!black!25!green} {\textbf{Jimmy}: #1}\fi} % I got dibs on this 
+\newcommand{\jaxson}[1] {\iflong\textcolor{TealBlue} {\textbf{Jaxson}: #1}\fi}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %\newcommand{\TODO}[1]{\par \noindent \textbf{\underline{TODO:}}\vspace#1}
 %\newcommand{\NOTE}[1]{\par \noindent \textbf{NOTE:}\space#1}
 
-\title{MITRE eCTF 2024:\\MISC Medical Devices}
-\author{Purdue University (\texttt{b01lers})}
-\date{\today}
-
-
+\title{MITRE eCTF 2024:\\ \Large Medical Infrastructure Supply Chain (MISC)\\Initial Design Documentation}
+\author{\large Jacob White}
+\author{\large Jihun Hwang (Jimmy)}
+\author{\large Jaxson Pahukula}
+% INSERT NAME HERE
+\affil{\normalsize Purdue University (\texttt{b01lers})}
+\date{\small \today}
 
 \begin{document}
 \maketitle
 
-\jw{This is a comment. Ctrl+F \texttt{main.tex} to find how do fefine one yourself. Replace color and signature if you want one too.}
+% \jw{This is a comment. Ctrl+F \texttt{main.tex} to find how to define comments command yourself, replacing color and signature to what you want.}
 
-\jw{For each section, use a new file to make merge conflicts / collab less annoying. e.g. see \texttt{intro.tex} for introduction}
+% \jw{If you contribute to this design document, add your name to \texttt{\textbackslash author}!}
 
-\hl{blah blah this is a comment}
+% \jw{In \texttt{main.tex}, uncomment \texttt{\textbackslash longtrue} to make it a private copy (with additional details and comments we don't share with other teams) or \texttt{\textbackslash longfalse} to make it a public copy (with comments removed)}
+
+% \jw{For each section or LaTeX figure, use a new file to make collaboration less annoying. e.g. see \texttt{intro.tex} for introduction}
+
+% \hl{This is also a comment. Delete all highlighted comments before sending to organizers!!!}
 
 \input{intro.tex}
+
+\input{hw_features.tex}
 
 \input{threat_model.tex}
 
 \input{primitives.tex}
 
-\input{build.tex}
+\section{MISC Protocols}
+\input{list.tex}
 
-% TODO: Functionality-specific descriptions, and security analysis to describe how we meet these requirements
+\input{attest.tex}
+
+\input{replace.tex}
+
+% TODO (before noon): BOOT
+\input{boot.tex}
+
+\input{message.tex}
+
+% TODO (later): Build and deployment
+% \input{build.tex}
 
 \newpage
 \bibliographystyle{alpha}
 \bibliography{cryptobib/abbrev3,cryptobib/crypto_crossref,other_sources}
+
+\newpage
+\input{appendix}
 
 \end{document}

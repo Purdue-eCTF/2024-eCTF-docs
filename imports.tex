@@ -1,11 +1,20 @@
 %%% Formatting packages
+\usepackage{authblk}
 \usepackage[utf8]{inputenc}
 \usepackage{footnote}
 \usepackage[dvipsnames]{xcolor}     % color names
 \usepackage{graphicx}
 \usepackage{url}        % URLs
 \usepackage{hyperref}   % named URLs (clashes with dtrt)
-\usepackage{enumitem}   % better enumerations
+%% Change hyperref's colors
+\hypersetup{            
+  colorlinks=true,   % e.g. footnotes
+  linkcolor=teal,   % internal links (e.g. equation and theorem labels)
+  urlcolor=cyan,     % \hyperref and \url
+  filecolor=red,
+  citecolor=OliveGreen,   % bibliography citations
+}
+\usepackage[inline]{enumitem}   % better enumerations
 \usepackage{multirow}   % multi-row math tables
 \usepackage{multicol}   % multi-column pages and math tables
 \usepackage{soul}       % strikethrough
@@ -34,7 +43,25 @@
 \usepackage{algorithm2e}
 \usepackage{calc}
 
-\usepackage{cleveref} % Smart references (incl. e.g. Section/Appendix/Figure labels)
+\usepackage[capitalise,nameinlink]{cleveref} % Smart references (incl. e.g. Section/Appendix/Figure labels)
 
 \usepackage{float}
 \usepackage{xspace}
+
+\usepackage{diagbox}
+
+% From https://tex.stackexchange.com/questions/2441/how-to-add-a-forced-line-break-inside-a-table-cell
+\usepackage{makecell}
+\renewcommand\theadfont{}
+
+\usepackage[toc,page]{appendix}
+
+% https://stackoverflow.com/questions/5940756/draw-a-table-in-vertical-display-instead-of-horizontal-display
+\usepackage{lscape}
+
+% https://tex.stackexchange.com/questions/599929/how-can-i-create-an-alice-bob-crypto-protocol-diagram-with-arrows
+\usepackage[operators,sets]{cryptocode}
+\createprocedureblock{pcb}{center,boxed}{}{}{}
+
+% https://tex.stackexchange.com/questions/552025/cryptocode-2-columns
+\usepackage{dashbox}

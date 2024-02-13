@@ -1,0 +1,55 @@
+\subsection{Boot Protocol}
+
+\jw{ This one might be secure and cleaner with AE instead of new signature, not sure...}
+
+\jw{Maybe if the firmware can also have some sort of hash (ofAData? firmware?) to do a proper pre-boot attestation indicating that it's unchanged, but that can come later I suppose.}
+
+\jw{ NOTE: Signature scheme is needed because Components should NOT be able to forge a boot on behalf of the AP. (PKI? AP secret?).}
+
+\jw{TODO: COMPONENT MUST MAKE SURE STORED $r_B$ ISN'T STALE, and is erased before boot, and does NOT get stored persistently. We want to have the Component "forget" about the previous session if the AP doesn't manage to boot in the expect amount of time (3ish seconds). Ideally, attackers must not be able to arbitrarily write their own value for $r_B$ in the Component's memory, otherwise invalid AP can boot.}
+
+The boot protocol performs a two-way Challenge-Reponse (CR) sub-protocol to authenticate both the Components and the initiating Application Processor as valid parts of the MISC medical device. The Components remember that a boot request has been made by storing $r_B$. Both the AP and the polled Components only keep around relevant session data and wait for a response for as long as the request remains active (i.e., before boot timeout -- not shown below). Then, once the AP has validated the 2 provisioned Component IDs, it sends them a new signature with the same random value used in its challenge-response to boot to ``prove'' CR has already occurred. The component verifies it is ready, and the entire medical device (AP and Components) both boot.
+
+\begin{pcimage}
+\pcb{$\boot()$}{
+\> \> \\
+\textbf{Application Processor} \> \text{(I2C channel)} \hspace{1.2cm} \> \textbf{Component}
+\\[0.1\baselineskip][\hline] \\[-0.5\baselineskip]
+\text{start} \gets \text{getTime}() \> \> \\
+\pcfor \cid \in \provcid \pcdo \\
+\t r_A \sample \rng() \> \> \\ 
+\t \sigma \gets \Sign_{\msk_{AP}}(\cid \| r_A) \\
+\> \sendmessageright*{{ \texttt{BOOT\_REQ} \atop \cid, r_A, \sigma}} \> \\
+\> \> \pcif \text{Verify } \cid = \cid_{\actual} \\
+\> \> \text{ and } \Ver_{\mvk_{AP}}(\cid \| r_A, \sigma) = T \\
+%\> \> \pcif \text{they both match} \pcthen \\
+\> \> \t c_A \gets \Enc_{\sk}(r_A + 1) \\
+\> \> \t r_B \sample \rng() \\
+\> \> \pcelse \text{ignore} \\
+\> \sendmessageleft*{c_A, r_B} \> \\
+\t \text{Verify } \Dec_{\sk}(c_A) = r_A + 1 \> \> \\
+\t c_B \gets \Enc_{\sk}(r_B + 1) \\
+\> \sendmessageright*{r_B, c_B} \> \\
+\> \> \text{Verify } \Dec_{\sk}(c_B) = r_B + 1 \\
+\> \> \text{Store } r_B \\
+\> \sendmessageleft*{\textit{``Verified''}} \> \\
+%\t \text{Try/wait for next CID} \\
+\pcif \text{All } 2\,\provcid \text{ valid} \pcthen \\
+\t \pcfor \mathsf{addr} \in \provcid \pcdo \\
+\t \t \sigma' \gets \Sign_{\msk_{AP}}(\cid \| r_B) \\
+\> \sendmessageright*{{ \texttt{BOOT\_INIT} \atop \cid, r_B, \sigma'}} \> \\
+\> \> \pcif \text{Verify } \cid = \cid_{\actual} \\
+\> \> \text{ and } \Ver_{\mvk_{AP}}(\cid \| r_A, \sigma) = T\\
+\> \> \text{ and } r_B \text{ matches stored } \\
+\> \sendmessageleft*{\textit{``Ready to Boot''}} \> \\
+%\text{end} \gets \text{getTime}() \> \> \\
+%\text{sleep}(3s - (\text{end} - \text{start})) \> \> \\
+% HOPE all of them are still live...
+\mathsf{print\_boot\_hello}() \> \> \mathsf{print\_boot\_hello}() \\
+\mathsf{disable\_preboot\_then\_boot}() \> \> \mathsf{disable\_preboot\_then\_boot}()
+}
+\end{pcimage}
+
+\paragraph{Functionality.} We hope that despite all of this Challenge-Response communication over I2C, it will still meet the 3s timing requirements to boot. Anticipating this, we will consider solutions with fewer rounds in the meantime. The MISC medical device should be left in a consistent state to whatever extent possible in networking scenarios, as all parties are expected to timeout and revert to their usual state after the boot protocol session expires and also the Components wait for the AP to check that all Components have been validated before booting.
+
+\paragraph{Security. } As with prior protocols, we use challenge-response protocols with strongly random nonces to prevent replay attacks, and to make sure both parties are live and properly provisioned with the expected keys. Digital signatures are used to authenticate the AP from the other components.

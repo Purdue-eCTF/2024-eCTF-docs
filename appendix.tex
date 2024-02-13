@@ -1,0 +1,70 @@
+\appendix
+
+\begin{landscape}
+\section{Defenses against Attackers' Goals and Capabilities}
+\label{app:table}
+
+\begin{table}[!ht]
+\centering
+\begin{tabular}{|c||c|c|c|c|c|}
+\hline
+\hbox{\diagbox{Capability}{Goal}}
+    & \thead{Replacement \\ Invalid or Token \\ Extract \textbf{(SR3)}}
+    & \thead{Extract \\ Attest. PIN / \\ Data \textbf{(SR3--4)}}
+    & \thead{Boot with \\ Invalid \\ AP \textbf{(SR2)}}
+    & \thead{Boot with \\ Invalid \\ Comp. \textbf{(SR1)}}
+    & \thead{Tampered \\ Post-Boot \\ Msgs. \textbf{(SR5)}}
+    \\ \hline\hline
+\thead{Impersonate AP \\ \textbf{(\hl{AS1-3?}, AS4)}} % D2: {SR2, SR4} (Black Box)
+    & \makecell{N/A \\~\![known/ignored]}
+    & \makecell{AP needs HW \\ only Enc. key}
+    & \makecell{C-R with HW \\ only AP secret}
+    %& %\makecell{C-R with HW \\ only AP secret}
+    & \makecell{N/A \\~\![all dishonest]}
+    & \multirow{2}{*}{\makecell{\\ Signatures?}} %lmao hacky \\[-0.5em]
+    \\ \cline{1-5}
+    \thead{Impersonate Comp. \\ \textbf{(\hl{AS1?}, AS2--4})}
+    & \makecell{Don't send \\ RTok, C-R Comp.}
+    & \makecell{Don't send \\ APIN to Comp.}
+    & \makecell{N/A \\~\![all dishonest]}
+    & \multirow{2}{*}{\makecell{C-R with HW \\ only Comp. \\ Secret \\ (NOT CID)}}
+    & % merge above
+    \\ \cline{1-4}\cline{6-6}
+\thead{Supply Chain Swap \\ \textbf{(AS3)}} % D3: {SR1, SR4}
+    & \makecell{N/A \\~\![known]}
+    & \makecell{Encrypt Secrets \\ more than APIN}
+    & \makecell{C-R with HW \\ only AP secret}
+    & % merge above
+    & \makecell{N/A \\~\![no post-boot]}
+    \\ \hline
+\thead{Eavesdrop I2C Bus \\ \textbf{(All AS)}}
+    & \makecell{Don't send \\ RToken}
+    & \makecell{Encrypt Sent \\ Attestation Data}
+    & \multicolumn{2}{c|}{\multirow{3}{*}{CSPRNG Nonce with C-R}}
+    %& 
+    & \multirow{3}{*}{\makecell{\\[0.5em] CSPRNG \\ Nonce with \\ Signatures}} 
+    \\ \cline{1-3}
+\thead{Try/Replay AP Msgs. \\ \textbf{(All AS)}}
+    & \makecell{C-R Auth. \\ AP before boot} 
+    & Rate-limit APIN
+    &\multicolumn{2}{c|}{}
+    %& 
+    & 
+    \\ \cline{1-3}
+\thead{Replay Comp. Msgs. \\ \textbf{(All AS)}}
+    & \makecell{AP expects \\ RTok first + C-R}
+    & \makecell{N/A \\~\![repeat AData]}
+    & \multicolumn{2}{c|}{} 
+    %& 
+    & 
+    \\ \hline
+\thead{Hardware Access \\ \textbf{(AS1--2, AS4)}}
+    & \multicolumn{5}{c|}{{No Side-Channels, Hash APIN, Fault-Tolerance, \& Encrypt Stored AData}}
+%    & 
+%    & 
+%    & 
+%    & 
+    \\ \hline
+\end{tabular}
+\end{table}
+\end{landscape}

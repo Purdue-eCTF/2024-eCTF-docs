@@ -1,19 +1,32 @@
-\section{Hardware Specifications and Security Features}
+\section{Hardware Security Features}
 \label{sec:hw-features}
 
-\jw{TODO (not me lol): Basic hardware description and features here -- what do we have to work with on the board that's relevant to our design?}
-\jw{this is all I know how to talk about, I know next to nothing about this board but that's the high level :). Someone please add more details here about the board itself if you know what to talk about.}
+%\jw{TODO (not me lol): Basic hardware description and features here -- what do we have to work with on the board that's relevant to our design?}
+%\jw{this is all I know how to talk about, I know next to nothing about this board but that's the high level :). Someone please add more details here about the board itself if you know what to talk about.}
 
-Due to the concerns of attackers having physical access to the board while it executes, we are actively seeking out a number of hardware security protections and countermeasures that we will put in place to help ``harden'' the embedded system against side-channel, injection, and other hardware attacks:
+In order to ensure secure operation even while attackers have physical access to the board, we have extensively explored hardware security protections and countermeasures to ``harden'' the embedded system against side-channel, injection, and other hardware attacks:
+\iflong
 \begin{itemize}
-    \item Leverage both the true random number generator (TRNG) provided by the board as well as other potential high-entropy sources of randomness to serve as a seed for cryptographically secure pseudo-random number generators, helping to ensure the highest "quality" of randomness possible for all relavent cryptographic algorithms;
-    \item Implement ASLR-like layout randomization by randomizing offsets in the firmware binary in order to make it harder to perform attacks on our system;
-    \item Implement and audit for constant-time implementations of our firmware as well as cryptographic and other downstream-dependant libraries to ensure that it will be harder to notice e.g. what variance in time across different guesses at a secret value (such as a cryptographic key) can reveal about its correctness;
-    \item Protect against fault injections, instruction skipping, clock glitching, and other similar measures which attackers might leverage in an attempt to bypass security checks; and
-    if time alows, construct our own physically unclonable function (PUF) which essentially identify/fingerprint boards based on the variances in the manufacture of individual hardware components.
+    \item Leverage both the true random number generator (TRNG) provided by the board as well as other potential high-entropy sources of randomness to serve as a seed for cryptographically secure pseudo-random number generators (CSPRNG), ensuring the highest "quality" of randomness possible for all relevant cryptographic algorithms;
+    \item Implement ASLR-like memory layout randomization by randomizing offsets in the firmware binary to make it harder to perform attacks on our system;
+    \item Employ audited, constant-time implementations of cryptography and other downstream-dependant libraries to ensure that it will be harder to limit the ability for attackers to leverage hardware-level timing and other side-channel attacks; and 
+    \item Protect against fault injections, instruction skipping, clock glitching, and similar hardware-level attacks which attackers might leverage in an attempt to bypass security checks.
+    \iflong
+    More specifically:
+    \begin{itemize}
+        \item Dummy cryptographic verification and decryption operations randomly injected into each relevant check to frustrate power analysis on the cryptographic secrets;
+        \item Inject random operations between checks to frustrate timing and glitching attacks;
+        \item Perform multiple valid cryptographic checks and ensure that fallthroughs skip to errors to frustrate instruction glitching;
+        \item For anything especially susceptible to replay attacks or brute-force (e.g. attempting to guess PINs or generating nonces), inject additional delays to slow down attempts.
+    \end{itemize}
+    \fi
+    %\item if time alows, construct our own physically unclonable function (PUF) which essentially identify/fingerprint boards based on the variances in the manufacture of individual hardware components.
 \end{itemize}
+\else
+This includes using cryptographically-secure random number generators (CSPRNGs) instead of hardware-based ``true'' random number generators (TRNGs) whenever possible, constant-time memory and cryptographic operations, clock glitching and other fault injection detection, memory layout randomization, and even power analysis obfuscations, where relevant.
 
-One outstanding issue we have yet to fully resolve is \hl{where to securely store secret data} (e.g. cryptographic key material) on the board. Storing them in flash memory is one potential option, especially since these secrets may hardly need to be re-written (if ever), but we are in the process of exploring the viability of flash memory for this purpose, as well as other potential options for securely storing private information on the board.
+To ensure that the necessary cryptographic secrets and other data stored on these boards remain tamper-proof and confidential, we store them in the 512 KB flash memory. Since this flash memory resides on-chip, this makes it near-impossible for attackers to probe the flash memory for its contents or overwrite it with its own values. \jw{MITRE Organizers also store the flags here, so we'd have worse problems if attackers were able to dump the flash.}
+\fi
 
 %% Hardware threat model 
 % ===================================================

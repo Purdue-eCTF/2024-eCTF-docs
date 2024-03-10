@@ -25,6 +25,8 @@
 \newcommand{\cid}{\ensuremath{\mathsf{CID}}\xspace}
 \newcommand{\actual}{\ensuremath{\mathsf{actual}}\xspace}
 \newcommand{\salt}{\ensuremath{\mathsf{salt}}\xspace}
+\newcommand{\asalt}{\ensuremath{\mathsf{asalt}}\xspace}
+\newcommand{\rsalt}{\ensuremath{\mathsf{rsalt}}\xspace}
 \newcommand{\attest}{\ensuremath{\mathsf{Attest}}\xspace}
 \newcommand{\listfunction}{\ensuremath{\mathsf{List}}\xspace}
 \newcommand{\replace}{\ensuremath{\mathsf{Replace}}\xspace}
@@ -38,9 +40,18 @@
 \newcommand{\sk}{\ensuremath{\mathsf{sk}}\xspace}
 \newcommand{\Sign}{\ensuremath{\mathsf{Sign}}\xspace}
 \newcommand{\Ver}{\ensuremath{\mathsf{Ver}}\xspace}
-\newcommand{\msk}{\ensuremath{msk}\xspace}
-\newcommand{\mvk}{\ensuremath{mvk}\xspace}
-\newcommand{\nonce}{\ensuremath{\mathsf{nonce}}\xspace}
+\newcommand{\ask}{\ensuremath{\mathsf{ask}}\xspace}
+\newcommand{\asklist}{\ensuremath{\overline{\ask}}\xspace}
+\newcommand{\msk}{\ensuremath{\mathsf{msk}}\xspace}
+\newcommand{\mvk}{\ensuremath{\mathsf{mvk}}\xspace}
+\newcommand{\mvklist}{\ensuremath{\overline{\mvk}}\xspace}
+\newcommand{\hsk}{\ensuremath{\mathsf{hsk}}\xspace}
+%\newcommand{\hvk}{\ensuremath{\mathsf{hvk}}\xspace}
+\newcommand{\csk}{\ensuremath{\mathsf{csk}}\xspace}
+%\newcommand{\nonce}{\ensuremath{\mathsf{nonce}}\xspace}
+\newcommand{\nonce}{\ensuremath{n}\xspace}
+\newcommand{\buildid}{\ensuremath{\mathsf{idx}}\xspace}
+\newcommand{\noncelist}{\ensuremath{\overline{\nonce}}\xspace}
 \newcommand{\rng}{\ensuremath{\mathsf{TRNG}}\xspace}
 \newcommand{\trng}{\ensuremath{\mathsf{TRNG}}\xspace}
 
@@ -210,7 +221,7 @@
 \ifdefined\theorem\else\newtheorem{theorem}{Theorem}[section]\fi
 \newtheorem*{theorem*}{Theorem}
 %%% NOTE: use "problem" if HW, "theorem" if generic, or "section" if paper
-\ifdefined\assumption\else\newtheorem{assumption}{Assumption}[section]\fi
+\ifdefined\assumption\else\newtheorem{assumption}{Assumption}\fi
 \newtheorem*{assumption*}{Assumption}
 \ifdefined\corollary\else\newtheorem{corollary}{Corollary}[theorem]\fi
 \newtheorem*{corollary*}{Corollary}
@@ -223,6 +234,8 @@
 \ifdefined\proposition\else\newtheorem*{proposition}{Proposition}\fi
 \ifdefined\fact\else\newtheorem*{fact}{Fact}\fi
 \ifdefined\remark\else\newtheorem*{remark}{Remark}\fi
+
+\newtheorem{rem}{Remark}
 
 % Modifies the enumerate* to use 1) 2) 3) by default
 \renewlist{enumerate*}{enumerate*}{1}

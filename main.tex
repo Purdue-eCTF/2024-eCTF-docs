@@ -15,8 +15,8 @@
 %   content if short version (excludes comments and other things we don't want to reveal to other teams)
 % \fi
 \newif\iflong
-\longtrue
-% \longfalse
+%\longtrue
+\longfalse
 % TODO: CHANGE ^ TO \longfalse BEFORE SUBMISSION TO ORGANIZERS
 
 %%% Common template packages (must come before macros.tex)
@@ -35,13 +35,100 @@
 %\newcommand{\TODO}[1]{\par \noindent \textbf{\underline{TODO:}}\vspace#1}
 %\newcommand{\NOTE}[1]{\par \noindent \textbf{NOTE:}\space#1}
 
-\title{MITRE eCTF 2024:\\ \Large Medical Infrastructure Supply Chain (MISC)\\Initial Design Documentation}
+\title{MITRE eCTF 2024:\\ \Large Medical Infrastructure Supply Chain (MISC)\\Design Documentation}
 \author{\large Jacob White}
 \author{\large Jihun Hwang (Jimmy)}
+\author{\large Jack Roscoe}
 \author{\large Jaxson Pahukula}
 % INSERT NAME HERE
 \affil{\normalsize Purdue University (\texttt{b01lers})}
 \date{\small \today}
+
+% Abbreviations etc. (see Appendix)
+\newglossary{symbols}{sym}{sbl}{List of Symbols}
+ %================ACRONYMS=================%
+\newacronym{eCTF}{eCTF}{Embedded Capture the Flag}
+\newacronym{MISC}{MISC}{Medical Infrastructure Supply Chain}
+%\newacronym{CS}{CS}{Computer Science}
+%\newacronym{CE}{CE}{Computer Engineering}
+%\newacronym{EE}{EE}{Electrical Engineering}
+\newacronym{RNG}{RNG}{Random Number Generator}
+\newacronym{TRNG}{TRNG}{True Random Number Generator}
+\newacronym{CSPRNG}{CSPRNG}{Cryptographically-Secure Pseudo-Random Number Generator}
+\newacronym{ASLR}{ASLR}{Address Space Layout Randomization}
+%\newacronym{B}{B}{Bytes (unit)}
+\newacronym{AP}{AP}{Application Processor}
+\newacronym{UART}{UART}{Universal Asynchronous Receiver-Transmitter}
+\newacronym{PIN}{PIN}{Personal Identification Number}
+\newacronym{SR}{SR}{Security Requirement}
+\newacronym{AS}{AS}{Attack Scenario (aka Attack Phase in eCTF rules)}
+\newacronym{API}{API}{Application Programming Interface}
+\newacronym{NIST}{NIST}{National Institute of Standards and Technology}
+\newacronym{HMAC}{HMAC}{(Hash-based) Message Authentication Code}
+\newacronym{SHA}{SHA}{Secure Hash Algorithms}
+\newacronym{RFC}{RFC}{Request for Comments}
+%\newacronym{MAC}{MAC}{Message Authentication Code}
+\newacronym{AES}{AES}{Advanced Encryption Standard}
+\newacronym{AE}{AE}{Authenticated Encryption}
+%\newacronym{nonce}{nonce}{Number used ONCE}
+\newacronym{Ed25519}{Ed25519}{Edwards-curve Digital Signature Algorithm over Curve25519}
+%\newacronym{PC}{PC}{Personal Computer}
+\newacronym{PKI}{PKI}{Public-Key Infrastructure}
+\newacronym{I2C}{I2C}{Inter-Integrated Circuit}
+\newacronym{CR}{CR}{Challenge-Response}
+\newacronym{TLS}{TLS}{Transpoprt Layer Security}
+\newacronym{SSL}{SSL}{Secure Socket Layer}
+\newacronym{CC}{C\&C}{Command and Control}
+\newacronym{NA}{N/A}{Not Applicable}
+\newacronym{HW}{HW}{Hardware}
+%================SYMBOLS=================%
+\newglossaryentry{m}{type=symbols,name=\ensuremath{m,M},sort=m,description={Message or plaintext}}
+%\newglossaryentry{HMACs}{type=symbols,name=\HMAC\!,sort=hmac,description={HMAC Tagging Algorithm}}
+\newglossaryentry{k}{type=symbols,name=\ensuremath{k},sort=k,description={Cryptographic key}}
+\newglossaryentry{:=}{type=symbols,name=\ensuremath{:=},sort={=:},description={Defined equal to}}
+\newglossaryentry{!=}{type=symbols,name=\ensuremath{\neq},sort={=!},description={Compare not equal to}}
+\newglossaryentry{H}{type=symbols,name=\ensuremath{H},sort=H,description={Cryptographic hash function}}
+\newglossaryentry{||}{type=symbols,name=\ensuremath{\Vert},sort={||},description={(Byte)string concatenation}}
+\newglossaryentry{xor}{type=symbols,name=\ensuremath{\oplus},sort=⊕,description={XOR}}
+\newglossaryentry{tau}{type=symbols,name=\ensuremath{\tau},sort=tau,description={HMAC Tag}}
+\newglossaryentry{nonces}{type=symbols,name=\nonce\!,sort=n,description={Number used once (``nonce'')}}
+\newglossaryentry{c}{type=symbols,name=\ensuremath{c},sort=c,description={Ciphertext}}
+\newglossaryentry{sigma}{type=symbols,name=\ensuremath{\sigma},sort=sigma,description={Signature}}
+\newglossaryentry{<-}{type=symbols,name=\ensuremath{\gets},sort={<-},description={Assign equal to}}
+\newglossaryentry{=}{type=symbols,name=\ensuremath{=},sort={=},description={Compare equal to}}
+\newglossaryentry{sk}{type=symbols,name=\ensuremath{\mathsf{sk}},sort=sk,description={Secret/signing key}}
+\newglossaryentry{pk}{type=symbols,name=\ensuremath{\mathsf{pk}},sort=pk,description={Public key}}
+\newglossaryentry{in}{type=symbols,name=\ensuremath{\in},sort=∈,description={(Is contained) in}}
+\newglossaryentry{notin}{type=symbols,name=\ensuremath{\not\in},sort={∈!},description={Not in}}
+\newglossaryentry{set}{type=symbols,name=\ensuremath{\set{\ldots}},sort={\{\}},description={Set}}
+\newglossaryentry{kleene}{type=symbols,name=\ensuremath{\set{\ldots}^*},sort={\{\}*},description={Kleene star ($\geq 0$ repetitions in set)}}
+\newglossaryentry{prime}{type=symbols,name=\ensuremath{\circ'},sort=',description={Different or modified $\circ$}}
+\newglossaryentry{apin}{type=symbols,name=\apin\!,sort=apin,description={Attestation PIN}}
+\newglossaryentry{rtok}{type=symbols,name=\rtok\!,sort=rtok,description={Replace Token}}
+\newglossaryentry{hsk}{type=symbols,name=\hsk\!,sort=hsk,description={HMAC Secret Key}}
+\newglossaryentry{ask}{type=symbols,name=\ask\!,sort=ask,description={Attestation Secret Key}}
+\newglossaryentry{msk}{type=symbols,name=\msk\!,sort=msk,description={Message Signing Key}}
+\newglossaryentry{csk}{type=symbols,name=\csk\!,sort=csk,description={Challenge-response Secret Key}}
+\newglossaryentry{mvk}{type=symbols,name=\mvk\!,sort=mvk,description={Message Verification Key}}
+\newglossaryentry{cid}{type=symbols,name=\cid\!,sort=cid,description={Component IDentifier}}
+\newglossaryentry{idx}{type=symbols,name=\buildid\!,sort=idx,description={Build Identifier (index to keylist)}}
+\newglossaryentry{<-S}{type=symbols,name=\ensuremath{\sample},sort={<-S},description={Assign from random sample to}}
+\newglossaryentry{overline}{type=symbols,name=\ensuremath{\overline{\circ}},sort=-,description={List of $\circ$}}
+\newglossaryentry{r}{type=symbols,name=\ensuremath{r},sort=r,description={Random number}}
+\newglossaryentry{len}{type=symbols,name=\ensuremath{\ell},sort=l,description={Length (in Bytes)}}
+%\newacronym{hsk}{hsk}{HMAC Secret Key}
+%\newacronym{ask}{ask}{Attestation Secret Key}
+%\newacronym{msk}{msk}{Message Signing Key}
+%\newacronym{mvk}{mvk}{Message Verification Key}
+%\newacronym{csk}{csk}{Challenge-response Secret Key}
+%\newacronym{CID}{CID}{Component IDentifier}
+%\newacronym{idx}{idx}{Index}
+%\newacronym{APIN}{APIN}{Attestation PIN}
+%\newacronym{ADATA}{ADATA}{Attestation Data}
+%\newacronym{RTok}{RTok}{Replace Authentication Token}
+%\end{filecontents}
+\makenoidxglossaries
+\glsnoexpandfields
 
 \begin{document}
 \maketitle
@@ -65,19 +152,19 @@
 \input{primitives.tex}
 
 \section{MISC Protocols}
+\label{sec:MISC}
+
+\input{build_gen.tex}
+
 \input{list.tex}
 
 \input{attest.tex}
 
 \input{replace.tex}
 
-% TODO (before noon): BOOT
 \input{boot.tex}
 
 \input{message.tex}
-
-% TODO (later): Build and deployment
-% \input{build.tex}
 
 \newpage
 \bibliographystyle{alpha}

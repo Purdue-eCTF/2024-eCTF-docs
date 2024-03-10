@@ -1,33 +1,58 @@
 \subsection{Messaging Protocol}
+\label{sec:messaging}
 
-After the MISC Medical Device (AP together with its Components) boots, the only valid functionality the device can perform is to send authenticated messages between the Application Processor and the Components. We not only want to protect the integrity of these messages (i.e., prevent tampering) but also authenticate and verify the identity of communicating parties to ensure that these messages indeed come from the correct Components or AP. We also want to avoid replay/duplication attacks to ensure these messages aren't repeatedly sent more times than intended.
+After the MISC Medical Device (i.e., AP together with its Components) boots, the only valid functionality the device is allowed to perform is to send authenticated messages between the Application Processor and the Components. Our post-boot messaging protocol can be outlined as follows:
 
-\jw{TODO: This needs work still (e.g. maybe need a clean and not buffer-overflowy way to differentiate variable-length message from everything else, domain separation/delineation concerns, etc.) but won't have time to iterate on it much before initial draft :)}
-
-To support the ability to not only verify the integrity of messages but also verify the identity of its sender, we will need to use some form of private identifier or PKI solution. At build time we generate and provision public-private keypairs for each AP and component, having each of them store their own private message signing key $\msk_\circ$, where $\circ$ represents the device in question. Since the Components are only expected to talk to the boards, they need only store the AP's public message verification key $\mvk_{AP}$. As it should be possible for application processors to be compatible with as many components as possible, however, a na{\"i}ve option would be to simply have the AP store all built components' public keys $\mvk_\circ$ in memory, ideally indexed by Component ID (CID). This list should be public but tamper-proof -- it may suffice to store these in flash memory.
-
-We acknowledge that having the AP store all public keys in the firmware is certainly not a very scalable real-world solution (compared to, say, requesting a PKI and verifying its authenticity via a Certificate Authority), as one might imagine an AP needs to be compatible with Components built after its manufacture date. The sheer number of potentially compatible components would also pose a large concern for real-world storage-constrained embedded devices. However, this solution more than suffices for the purpose of this competition since we will be only working with at most 4 deployed components for the purposes of demonstration.
-
-With that caveat out of the way, our messaging protocol will follow this general algorithm\footnote{We emphasize that either side can initiate the conversation in a symmetric way, but due to the key distribution the Component can only talk with an AP.}:
-
+\newpage
 \begin{pcimage}
-\pcb{$\msg(m, \cid)$}{
+\pcb{$\msg_{AP}(m, \cid)$}{
 \> \> \\
-\textbf{Application Processor} \> \text{(I2C channel)} \hspace{1.2cm} \> \textbf{Component}
+\textbf{Application Processor} \> \text{(I2C channel)} \hspace{1.2cm} \> \textbf{Component i}
 \\[0.1\baselineskip][\hline] \\[-0.5\baselineskip]
 %\t \text{start} \gets \text{getTime()} \> \> \\
-\nonce \sample \rng() \\
-\sigma \gets \Sign_{\msk_{AP}} (m \| \cid \| \nonce ) \> \> \\
-\> \sendmessageright*{{(m, \cid, \nonce), \sigma}} \> \\
-\> \> \text{Verify } \cid = \cid_{\actual} \\
-\> \> \text{ and } \Ver_{\mvk_{AP}}(m, \cid, \nonce, \sigma) = \text{True} \\
-\> \> \pcif \text{False} \pcthen \\
-\> \> \t \text{print } \text{``suspicious activity detected''} \\
-\> \> \t \text{break}() \\
+\> \sendmessageright*{\texttt{MSG\_INIT}} \> \\%, \cid} \> \\
+%\> \> \text{Verify } \cid = \cid_i \\
+\> \> \nonce \sample \mathsf{CSPRNG}() \\
+\> \sendmessageleft*{\nonce} \> \\
+\sigma \gets \Sign_{\msk_{AP}} (\ell \| \cid \| \nonce' \| m) \> \> \\
+\> \sendmessageright*{(\ell, \cid, \nonce', m), \sigma} \> \\
+\> \> \text{Verify } \Ver_{\mvk_{AP}}(\ell \| \cid \| \nonce' \| m, \sigma) = 1 \\
+\> \> \qquad \text{ and } \mathsf{len}(m) \leq \min{(\ell, 32 \text{B})} \\
+\> \> \qquad \text{ and } \nonce' = \nonce \\
+\> \> \qquad \text{ and } \cid = \cid_i \\
+%\> \> \pcif \text{Verify fails} \pcthen \\
+%\> \> \t \text{print } \text{``suspicious activity detected''} \\
+%\> \> \t \text{abort}() \\
+\> \sendmessageleft*{\texttt{MSG\_DONE}} \> \\
 }
-
-\paragraph{Functionality.} \hl{We have no idea what functional message format will need to be supported here, functional timing requirements, or what kind of attack(s) will (not) admit a flag in the post-boot secure messaging scenario.} The SR5 flag being titled ``Operational Pump Swap'' does not clarify this.
-
-\paragraph{Security.} As stated in Security Requirement 5 of \cite{eCTFOfficial}, we preserve authenticity, integrity, and resistance from duplication by using nonces, Challenge-Response authentication, and signatures. \hl{\textbf{We more or less assumed that identification of individual APs/Components will be necessary for messaging, but this remains unclear for most other functionality as well.}}
-
+\vspace{-2em}
+\pcb{$\msg_{C}(m, \cid)$}{
+\> \> \\
+\textbf{Application Processor} \> \text{(I2C channel)} \hspace{1.2cm} \> \textbf{Component $i$}
+\\[0.1\baselineskip][\hline] \\[-0.5\baselineskip]
+%\t \text{start} \gets \text{getTime()} \> \> \\
+\nonce \sample \mathsf{CSPRNG}() \> \> \\
+\> \sendmessageright*{\texttt{MSG\_INIT}, \nonce, \cid} \> \\
+\> \> \text{Verify } \cid = \cid_i \\
+\> \> \sigma \gets \Sign_{\msk_i} (\ell \| \cid' \| \nonce' \| m) \> \> \\
+\> \sendmessageleft*{\stackrel{\texttt{MSG\_DONE},}{(\ell, \cid', \nonce', m), \sigma}} \> \\
+\text{Verify } \Ver_{\mvk_i}(\ell \| \cid \| \nonce' \| m, \sigma) = 1 \> \> \\
+\qquad \text{ and } \mathsf{len}(m) \leq \min{(\ell, 32 \text{B})} \> \> \\
+\qquad \text{ and } \nonce' = \nonce \> \> \\
+\qquad \text{ and } \cid' = \cid \> \> \\
+%\pcif \text{Verify fails} \pcthen \> \> \\
+%\t \text{print } \text{``suspicious activity detected''} \> \> \\
+%\t \text{abort}() \> \> \\
+}
 \end{pcimage}
+
+\paragraph{Functionality.} Since the competition's rules in \cite{eCTFOfficial} do not specify a need to support session-based handshakes or tear-down and since we can assume that the AP and Components have prior knowledge of each other (i.e., at manufacture time) and can agree on cryptographic algorithms out-of-band, we opt to avoid the complexities of TLS/SSL-based communication in favor of simpler tamper-proof protocols wherein only a single message is sent during each protocol instance. Since $\mathsf{Boot}$ is required to execute before $\mathsf{Msg}$ and because $\mathsf{Boot}$ verifies that both parties have valid signing/verification keypairs, it can be safely assumed that both parties know of the other's $\set{\mvk_{AP}, \mvk_i \defeq \mvklist[\provcid[\cid_i]]}$ to check against. We acknowledge that session-based protocols would be more efficient in terms of the number of rounds of I2C communication across multiple messages, but nevertheless our protocol still satisfies the requirement that it takes at most 1 second to complete each $\mathsf{Msg}$.
+
+\iflong While it remains unclear how exactly the organizers plan to implement an application on top of our existing post-boot messaging protocol or what their message format will be, it satisfies all of the required properties regardless.\fi We also acknowledge that storing all Components' public verification keys $\mvk_i \in \mvklist$ in flash memory is not the most scalable solution for many real-world scenarios (especially compared to, say, PKI distribution and validation via Certificate Authority). However, it may reasonably and theoretically scale to a non-trivial number of Components per deployment as long as we can assume that at least one of the following are true:
+\begin{enumerate}
+    \item Signature keypairs $(\msk_i, \mvk_i)$ are unique to each Component Facility and Component \emph{type} (e.g. 1 keypair for ``MedCo'' Insulin Pumps and 1 keypair for ``Acme'' Actuators, but same across all post-hoc manufactured ``Acme'' Actuators), with MISC Device Manufacturer sharing assigned key-pin identifier $\buildid_i$ and Component Facility sharing $\mvk_i$ out-of-band prior to manufacture;
+    \item If unique keypairs per individual Component, the Manufacturer can pre-provision all such Components' identifying data onto each MISC Device's AP during assembly; or
+    \item Trusted Certificate Authorities and other online PKI web/chain-of-trust mechanisms are infeasible or non-scalable solutions to validate the identity associated with each verification key $\set{\mvk_{AP}, \mvk_i}$ compared to public key/certificate-pinning.
+\end{enumerate}
+
+\paragraph{Security.} We check to ensure that the message length $\ell$ of $m$ does not exceed the speicfied maximum 32B and allocate sufficient memory to prevent potential buffer overflow attacks. We preserve integrity, authentication, and identification of the AP and Component through pre-established valid signing/verification keypairs (see above). Since Components are only manufactured with the pinned verification key $\mvk_{AP}$, Components do not have access to the corresponding secret signing key $\msk_{AP}$ and due to technical limitations of the I2C communication firmware, Components are unable to directly message each other and must be mediated by a validated AP microcontroller. Unique ``challenge'' nonces for each signature help mitigate ``oracle'' and replay attacks, and without session-based messaging does not require stateful nonce list management (N.B. if both parties are malicious, security guarantees are meaningless here). Due to public key-pinning of the verification keys $\mvk_i \in \mvklist$ and the inclusion of $\cid_i$ in the corresponding signature of each message, attackers cannot impersonate as a valid Component $i$ without the corresponding private signing key $\msk_i$ (and vice versa for AP). Signatures ensure that all messages are tamper-proof.

@@ -1,6 +1,8 @@
 \subsection{List Protocol}
 
+
 The List protocol lists all connected and provisioned Components on the Medical Device, and works as follows:
+\iflong
 \begin{enumerate}
     \item If AP initiates, it first obtains all provisioned Component IDs (CIDs) from memory, extracting the I2C address from the last byte before printing \texttt{P>\{Provisioned Component ID prefixed by 0x\}\textbackslash n}, one per line.
     \begin{enumerate}
@@ -8,7 +10,7 @@ The List protocol lists all connected and provisioned Components on the Medical 
     \end{enumerate}
     \item The initiating firmware then polls each I2C address in the range $\mathsf{addr} \in [\texttt{0x00}, \texttt{0xFF}]$\footnote{Some I2C addresses might be blacklisted due to the board design -- see Reference Design for more details.}:
     \begin{enumerate}
-        \item If the initiating firmware encounters its own I2C address, \hl{it skips and tries the next.}
+        %\item If the initiating firmware encounters its own I2C address, \hl{it skips and tries the next.}
         \item Else, initiating firmware sends a message such as \texttt{LIST\_HELLO} to I2C address $\mathsf{addr}$.
         \item If a Component or AP listening on $\mathsf{addr}$ hears \texttt{LIST\_HELLO}, it responds with \texttt{LIST\_ACK}. If AP, it also prints all provisioned IDs; see Step 1 above.
         \item If the initiating firmware receives \texttt{LIST\_ACK}, it prints \texttt{F>\{Found Component ID prefixed by 0x\}\textbackslash n} corresponding to the I2C address it successfully polled.
@@ -37,19 +39,18 @@ F>0xFE\\
 %LIST\_HELLO\\
 List
 }
-
-The List protocol can be abstracted and written as an algorithm as follows:
+\fi
 \begin{pcimage}
 \pcb{$\listfunction()$}{
 \text{print all } \provcid\text{'s} \\
 \pcfor \text{Component I2C addr} \pcdo \\
 \t \text{get } \cid \text{ from the component} \\
-\t \text{print } \cidOnly
+\t \text{print } \cid \text{ only}
 }
 \end{pcimage}
 
 \paragraph{Functionality.} To allow any device to initiate the List protocol, both the AP's and Component's firmware should be able to initiate (\texttt{LIST\_HELLO}) and acknowledge (\texttt{LIST\_ACK}) List requests. It must take at most 3 seconds to complete the List protocol.
 
-The List protocol is not directly related to any security requirements in \Cref{sec:SR}. However, it is important to note that the List protocol is both public and un-authenticated.
+\paragraph{Security.} The List protocol is \textbf{public and non-authenticated}, and must NOT be considered valid in other protocols. It is not related to any security requirements (\Cref{sec:SR}).
 %To prevent timing attacks and/or brute force, any protocol that exists early must delay until the full 3 seconds have elapsed before returning execution.
 %Lastly, to avoid potential ``oracle'' attacks on the provisioned IDs, every error that is printed must return the same message.

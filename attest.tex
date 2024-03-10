@@ -1,80 +1,162 @@
 \subsection{Attestation Protocol}
 
-The attestation protocol provides a method to request attestation data from a given component on the MISC through the AP in order to validate the credibility of the component. The caller provides a private Attestation PIN (abbr. APIN) and the ID of the Component to attest (abbr. CID). Our protocol will follow this general outline:
-\begin{enumerate}
-    \item The AP first hashes the provided APIN, and checks it against its stored, hashed APIN.
-    \begin{enumerate}
-        \item If they do not match, sleep for 3 seconds, print \texttt{E!Attest failed!\textbackslash n} and exit.
-        \item If they do match, the check succeeds, the AP records the start time, and the protocol continues.
-    \end{enumerate}
-    \item Next, the AP sends \texttt{ATTEST\_REQ} over I2C, followed by the CID, a randomly generated nonce, and the AP's MAC of these values.
-    \item Components listening on the I2C channel will receive the \texttt{ATTEST\_REQ}, and will then check the accompanying CID, checking it against its own ID. If they match, this component (the intended component) will continue with the protocol; otherwise, it will display an error message and abort.
-    \item The intended component will then attempt to verify the MAC. If it passes, the component will string together the attestation data as well as a randomly generated value with a specified length to protect against known or chosen plaintext attacks, all delineated by \hl{???} \jaxson{null byte maybe? idk} \jimmy{I don't think this is necessary (even if it is, I'd say this is more of an implementation detail).}
-    \item This long string will then be symmetrically encrypted using the secret key that was administered during the build stage, and sent over I2C prefixed with \texttt{ATTEST\_RESP}.
-    \item The AP will listen for the \texttt{ATTEST\_RESP} and receive the ciphertext, which it will then decrypt using its own identical secret key, extract the attestation data, and print it in the following format:
+The attestation protocol provides a method for an AP to request sensitive ``attestation data'' from a component (i.e. CID, location, date, customer) which helps identify the component. The caller provides a private Attestation PIN (abbr. APIN) and the ID of the Component to attest (abbr. CID) over UART. Attestation Data must have the following format:
+%\begin{enumerate}
+%    \item The AP first hashes the APIN with a private salt, and checks against its stored hash.
+%    \begin{enumerate}
+%        \item If they do not match, print \texttt{E!Attest failed!\textbackslash n} and sleep for 8 seconds.
+%        \item If they do match, the check succeeds, the AP records the start time, and it continues.
+%    \end{enumerate}
+%    \item Next, the AP sends \texttt{ATTEST\_REQ} over I2C, followed by the CID, a randomly generated nonce, and the AP's MAC of these values.
+%    \item Components listening on the I2C channel who receive the \texttt{ATTEST\_REQ} will check the accompanying CID, checking it against its own CID. If they match, the intended component will continue with the protocol; otherwise, it will ignore the request.
+    % \item The intended component will then attempt to verify the MAC. If it passes, the component will string together the attestation data as well as a randomly generated value with a specified length to protect against known or chosen plaintext attacks, all delineated by \hl{???} \jaxson{null byte maybe? idk} \jimmy{I don't think this is necessary (even if it is, I'd say this is more of an implementation detail).}
+%    \item The intended component then verifies the MAC tag and that the nonce is unique. If it passes, the component obtains the ciphertext of $\adata$ from flash memory and sends it and \texttt{ATTEST\_RESP} over I2C.
+%    \item The AP will listen for the \texttt{ATTEST\_RESP} and receive the ciphertext, which it will then decrypt using the Component's attestation secret key $\ask$, extract the attestation data, and print it in the following format:
     \begin{verbatim}
         C>0x{CID}\n
         LOC>{Attestation location}\n
         DATE>{Attestation date}\n
         CUST>{Attestation customer}\n
         Attest\n\end{verbatim}
-    \item Finally, the AP will record the end time of the protocol, and sleep for a certain amount of time so the total execution time remains and is equal to 3 seconds (i.e., $3s - (\text{end time} - \text{start time})$) in order to mitigate timing and brute force attacks.
-\end{enumerate}
+%    \item Finally, the AP will record the end time of the protocol, and sleep for a certain amount of time so the total execution time remains and is equal to 3 seconds (i.e., $3s - (\text{end time} - \text{start time})$) in order to mitigate timing and  attacks.
+%\end{enumerate}
 
 \jaxson{TODO how are we doing HMAC verification? AP HMAC stored in component's secure storage maybe?} 
-\jimmy{Good point, will get back to this soon later.}
-\jimmy{Actually no. The component will have to compute HMAC with the given CID and nonce. The whole point of MAC is to make sure the message was not tampered with and so this is more than sufficient. We can also check if the message actually came from the real AP because the secret key that we are computing MAC with will serve as some sort of the certificate. Also it doesn't make much sense to have HMAC stored in component, because nonce will be changing. }
+\jimmy{Actually no. The component will have to compute HMAC with the given CID and nonce. The whole point of MAC is to make sure the message was not tampered with and so this is more than sufficient. We can also check if the message actually came from the real AP because the secret key that we are computing MAC with will serve as some sort of the certificate. Also it doesn't make much sense to have HMAC stored in component, because nonce will be changing. } \jw{You can't tell it came from real \textbf{AP} specifically, you can just tell it came from real board that was built properly / loaded with the right keys. Don't need to store HMAC since everything's public and nonce changes each time.}
 
-The procedure described above can be abstracted into an algorithmic diagram shown below.
+Our attestation protocol can be outlined as follows:
 
-\jw{TODO: Generally with crypto protocols we should be careful about borrowing the same secret key / SK for using in 2 different primitives (here, Encryption and MAC). There's times this might be fine, but we need to sanity check this later.}
+%\jw{TODO: Generally with crypto protocols we should be careful about borrowing the same secret key / SK for using in 2 different primitives (here, Encryption and MAC). There's times this might be fine, but we need to sanity check this later.} \jimmy{Made a remark about it (Notations: Secret Keys)} \jw{I moved it to above the protocols so we make our secret/key notation clear first.}
 
-\jw{TODO: switch TRNG to PRNG probably (TRNG just being used to seed it on boot time)}
+%\jw{TODO: switch TRNG to PRNG probably (TRNG just being used to seed it on boot time)} \jimmy{Fixed}
 
-\jw{TODO: Avoid timing attacks on Component end too}
+\jw{TODO: Avoid timing attacks on Component end too} \jimmy{Also made a remark about it (Implementation Detail)} \jw{After discussing with Christina we don't really care about timing attacks bc the only private input with HMAC is key and well, brute-forcing key can be done offline without participating online. And since component isn't encrypting ADATA and needs valid \apin first regardless, can't timing attack encryption either.}
 
-\jw{TODO: What's stopping malicious AP from just ignoring the PIN check and sending the request to the AP anyway? We need AP validation here too before sending over $c$.}
+\jw{$\rightarrow$ if valid \apin goes through we don't need to delay at all}
+
+%\jw{TODO: What's stopping malicious AP from just ignoring the PIN check and sending the request to the AP anyway? We need AP validation here too before sending over $c$.} \jw{Answer: check nonce to make sure it doesn't repeat, so it can't pretend to be AP by sending old/stale HMACs.}
+
+\jw{If we have software compromise, \textbf{make sure we cant have valid Component call HMAC outside the protocol with attacker-specified parameters}. But As long as they can't inject behavior or re-flash binary of valid Component to give attacker HMAC to impersonate attacker, and we don't let Component invoke the \texttt{ATTEST\_REQ} functionality (e.g. asking itself to attest), sharing HMAC SK (\hsk) in all components is fine. We don't want to share ADATA Encryption keys though.}
+%\jw{TODO: Add attest message to bind in attest request.} \jimmy{Done.}
+
+%\jw{Question: Will Attestation date or other attestation data info change? Or can we hardcode attestation data directly as ciphertext without the key} \jw{no, it's static after build time; self-resolved}
+
+%\jw{Add secret encryption key PER COMPONENT and send r back as plaintext for c, or just send Enc(ADATA) and don't even give the component its Attestation Key (onl the AP, to decrypt it). Store c to not be tamperable either. They would just sit there offline to brute force HMAC key. Don't need to randomize encryption bc not worried about oracle attacks, will just try HMAC.} \jimmy{Done (I think) and also added a remark about it.}
 
 \begin{pcimage}
-\pcb{$\attest(\pin, \cid)$}{
+\pcb{$\attest(\apin', \cid)$}{
 \> \> \\
-\textbf{Application Processor} \> \text{(I2C channel)} \hspace{1.2cm} \> \textbf{Component}
+\textbf{Application Processor} \> \text{(I2C channel)} \hspace{1.2cm} \> \textbf{Component } i
 \\[0.1\baselineskip][\hline] \\[-0.5\baselineskip]
-h \gets H(\pin \| \salt ) \> \> \\
-\pcif h = H(\apin \| \salt) \pcthen \> \> \\
-\t \text{start} \gets \text{getTime()} \> \> \\
-\t \tau \gets \HMAC_{\sk}(\cid \| \nonce) \> \> \\
-\> \sendmessageright*{{\texttt{ATTEST\_REQ} \atop \cid, \nonce, \tau}} \> \\
-\> \> \text{Verify } \cid = \cid_{\actual} \\
-\> \> \text{ and } \HMAC_{\sk}(\cid \| \nonce) = \tau \\
-\> \> \pcif \text{they both match} \pcthen \\
-\> \> \t r \sample \rng() \\
-\> \> \t c \gets \Enc_{\sk}(\adata \| r) \\
-\> \> \t \pcreturn c \\
-\> \> \pcelse \pcdo \\
-\> \> \t \text{print } \text{``suspicious activity detected''} \\
-\> \> \t \text{break}() \\
-\> \sendmessageleft*{{ \texttt{ATTEST\_RESP} \atop c}}  \> \\
-\t \adata \| r\gets \Dec_{\sk}(c) \> \>  \\
-\t \text{print } \adata \> \> \\
-\t \text{end} \gets \text{getTime()} \>\> \\
-\t \text{sleep}(3s - (\text{end} - \text{start})) \\
-\t \pcreturn \adata \\
-\pcelse \pcdo \\
-\t \text{sleep}(3s) \\
-\t \text{print } \text{``attestation failed''} \\
-\t \pcreturn 0
+%\buildid_i \gets \provcid[\cid] \> \> \\
+h \defeq H(\apin \| \asalt )\\
+\qquad \textbf{from memory} \\
+h' \gets H(\apin' \| \asalt ) \> \> \\
+%\pcif h = H(\apin \| \asalt) \pcthen \> \> \\
+\text{Verify } h = h' \> \> \\
+%\qquad \text{and } \buildid_i \neq \text{ null } \> \> \\
+%\pcif h \neq H(\apin \| \asalt ) \> \> \\
+%\qquad \text{or } \buildid_i = \text{ null } \> \> \\
+%\t \text{sleep}(5s) \> \> \\
+%\t \text{print } \texttt{E!Attest failed!\textbackslash n} \> \> \\
+%\t \text{abort}() \> \> \\
+%\t \text{start} \gets \text{getTime()} \> \> \\
+%\nonce \sample \textsf{CSPRNG}() \> \> \\
+\> \sendmessageright*{\texttt{ATTEST\_INIT}} \> \\
+\> \> \nonce \sample \textsf{CSPRNG}() \\
+\> \sendmessageleft*{\nonce} \> \\
+m_{A1} \gets \texttt{ATTEST\_REQ} \> \> \\
+\tau \gets \HMAC_{\hsk}(m_{A1} \| \cid \| \nonce') \> \> \\
+\> \sendmessageright*{m_{A1}', \cid, \nonce', \tau} \> \\
+\> \> \text{Verify } \HMAC_{\hsk}(m_{A1}' \| \cid_i \| \nonce') = \tau  \\
+\> \> \qquad  \text{ and } \cid = \cid_i \\
+\> \> \qquad \text{ and } \nonce' = \nonce \\
+\> \> \qquad \text{ and } m_{A1}' = \texttt{ATTEST\_REQ} \\
+%\> \> \qquad \text{ and } \nonce \not\in \noncelist \\
+%\> \> \noncelist \mathrel{+}= \nonce \\
+\> \> \pcif \text{all checks pass} \pcthen \\
+\> \> \t m_{A2} \gets \texttt{ATTEST\_RESP} \\% \| \cid_i \\
+\> \> \t c \coloneqq \Enc_{\ask}(\adata) \textbf{ from memory} \\
+%\> \> \pcelse \pcdo \\
+%\> \> \t \text{sleep}(5s) \\
+%\> \> \t \text{print } \texttt{E!Attest failed!\textbackslash n} \\
+%\> \> \t \text{abort}() \\
+\> \sendmessageleft*{{  m_{A2}',  c}}  \> \\
+\text{Verify } m_{A2}' = \texttt{ATTEST\_RESP} \\
+%\buildid_i' \gets \provcid[\cid_i] \> \> \\
+%\text{Verify } \buildid_i = \buildid_i' \> \> \\
+%\ask_i \gets \overline{\ask}[\buildid_i] \> \> \\
+\adata \gets \Dec_{\ask}(c) \> \>  \\
+%\t \text{print } \adata \> \> \\
+%\t \text{end} \gets \text{getTime()} \>\> \\
+%\t \text{sleep}(3s - (\text{end} - \text{start})) \\
+\pcreturn \adata \\
+%\pcelse \pcdo \\
+%\t \text{sleep}(3s+5s) \\
+%\t \text{print } \texttt{E!Attest failed!\textbackslash n} \\
+%\t \pcreturn 0
 }
 \end{pcimage}
+\vspace{-1em}
+\begin{assumption}
+    We assume that the Attestation data (\adata) should never change after the Component firmware is built and loaded onto the board, and that it will never need to change unless it's sent back to the Component Facility for modifications. As a consequence, any Component $i$ does NOT need to store the $\ask$ key that was used to encrypt its $\adata$.
+\end{assumption}
 
-\jimmy{Does every component have a different key for the AP that they are associated with? If so, what are the benefits of having different keys (over having the same key across all components)?}
+\iflong
+\begin{rem}
+    While a malicious Component $j$ can record a transcript of a different Component $i$'s valid attestation, attempting to replay this ciphertext to the AP (either during its own attestation request or another Component's) will not succeed. Having distinct attestation secret keys with public key pinning (and checked indices) and authenticated encryption here makes it so that 1) attempting to impersonate any $j \neq i$ in this manner will cause the decryption to fail outright (i.e., detectable), and 2) even if Component $j$ interjects with a replayed response during $i$'s attestation, it can only respond with the honest ciphertext and still have decryption succeed. As such, nonces aren't necessary in the response.
+\end{rem}
+\fi
+
+\paragraph{Functionality.} Only the AP should be able to initiate (\texttt{ATTEST\_REQ}) Attestation requests. Only Components should be able to listen to Attestation requests and respond (\texttt{ATTEST\_RESP}) to the Attestation requests. Honest Components checking the request's CID ensures only the expected Component will respond with its Attestation data (\adata). It must take at most 3 seconds to complete $\mathsf{Attest}$, which is easily doable using only symmetric HMAC and encryption as well as careful choice of work factor for the \apin hash. However, if an attack is detected (here, PIN check failing with $H(\apin' \,\Vert\, \asalt) \neq H(\apin \,\Vert\, \asalt)$ means malicious Operator, and HMAC check failing with wrong $\tau$ or \nonce means malicious AP) we are allowed to delay for an additional 5 seconds. If we can assume that the Attestation data is static (see above), storing only the ciphertext of the Component's \adata in its memory is sufficient to ensure that a valid AP with the Component $i$'s attestation key $\ask$ can decrypt to \adata.
+
+\paragraph{Security.} If the AP or Component detects that the other party provides incorrect input (i.e. bad \apin or HMAC tag; see above), we delay for 5 seconds to limit the impact of brute-force attacks on the \apin. We keep \asalt private and hash the \apin to frustrate dictionary and side-channel attacks. Component checks for matching ``challenge'' nonce in HMAC to prevent impersonating AP \iflong through replay attacks\fi. Authenticated encryption and public-key pinning also prevent impersonating APs or Components. Components do not store its attestation key $\ask$ \iflong to protect from decryption of \adata caused by potential key extraction in the black-box scenario\fi.%\hl{Each Component uses a different attestation key $\ask_i$ to prevent other Components from snooping over I2C and decrypting its \adata.
+
+%\jimmy{If we are going to have the component pull up the encrypted ADATA from memory, then we should denote it differently. Writing it as $c \gets \Enc_{\sk}(\adata)$ gives the impression that it is the component doing the computation $\Enc_{\sk}(\adata)$.} \jw{Done. Emphasized ``from memory''}
+
+%\begin{rem}[Secret Keys]
+%$\sk$ stands for secret key and $\hsk$ means the secret key for $\HMAC$. It is crucial that $\hsk$ and $\sk$ are different, and in fact, secret keys should not be shared across the protocols and primitives. For example, the $\sk$ in this protocol must be different from the $\sk$ in $\replace$, $\boot$, and $\msg$. Also, $\apin$ denotes the actual attestation PIN and $\apin'$ denotes the PIN entered as user input.
+
+%Moreover, it is important to ensure that a (valid) component with the secret key for HMAC $\hsk$ cannot impersonate the AP by constructing a valid HMAC. In a similar sense, valid or not, components should not be able to decrypt the ciphertext that contains the $\adata$ that was not encrypted by itself. It is hence required that the two components do not share the same secret key $\sk$ for encryption. 
+%\end{rem}
+
+%\jw{I think there's a better way of notating this to make it clear so it doesn't all look like $\sk$. Different protocols for the same system usually call their keys different things, and since we WILL be sharing signing keys across all protocols, all $\sk$ encryption keys being distinct between protocols makes this all the more confusing. Something like $\mathsf{ask}, \mathsf{rsk}, \mathsf{bsk}, \mathsf{msk}$? The wording also needs to be cleaned up IMO -- maybe put a list of keys that the AP or given component has somewhere before any of these protocols?}
+%\jimmy{I was going to make the list after we are done updating all the protocols. It doesn't make much sense to choose the notations now imo. Lets write up the correct algorithms first.}
+%\jw{Done. We already had them mostly correct anyway, and keys being marked as different is part of it being correct lol. Clarifying it this way makes it a lot more confusing IMO.}
+
+%\begin{rem}
+%    $\asalt$ must be stored confidentially and in tamper-proof memory (much like the cryptographic keys) to prevent attackers from performing an offline dictionary / rainbow table attack on the PIN range \texttt{000000} -- \texttt{999999} and $\asalt$.
+%\end{rem}
+
+%\jw{See above for remark on \asalt being confidential and tamper-proof -- I wanted all storage (confidential and/or tamper-proof) discussions in the same subsection so these remarks weren't buried..}
+
+%\begin{rem}[Implementation Details]
+%The protocol sleeps for $3s - (\text{end time} - \text{start time})$ seconds to avoid timing attacks against the protocol. While not included in the algorithm above, a similar defense against timing attacks on the component end is desired; for example, the AP could send the start time (denoted as $\text{start} \gets \text{getTime}()$ in the algorithm above) along with $(\cid, \nonce, m, \tau)$, start the timer upon receipt, and time out after $3s - \text{start}$ seconds. Similarly, the AP should time out if it does not receive a response from the component after $3$ seconds from the beginning of the protocol.
+%\end{rem}
+
+%\jw{I'm actually not sure it does much against timing attacks / not sure it's necessary -- we had discussed with Christina that the attacker already knows if the HMAC succeeded or not anyway because all they're doing is guessing $\hsk$, and already have the $\HMAC$ inputs and tag to check against. So the key can just be determined by just trying $\HMAC$ on different $\hsk$ offline. Much easier and quicker than online timing attack where the key is inferred by if HMAC check passes or not.The timeout is really only relevant for rate-limiting the PIN here I think.}
+%\jw{TODO: Move discussion of error handling elsewhere because this is common across all protocols. Maybe also pull it out of the protocols if space is needed, and just have an comment somewhere that "implicitly, if any cryptographic check/computation fails, assume malicious".} \jw{Done and done, see above.}
+
+\iflong
+\begin{rem}
+Note that the AP is not encrypting anything, and is not responding to the component after decrypting the ciphertext that it received from the component. Defense against a potential chosen plaintext attack (which involves generating $c$ randomly and returning a random value when the verification step fails) is hence unnecessary. Note that, when $\tau$ is transmitted over I2C channel, the attacker already has access to the messages ($\cid, \nonce, $ and $m$). The only object that the attacker can `query' the component as an `oracle' is the HMAC secret key $\hsk$ which, assuming the attacker wants to do it, can be done locally without querying the component. 
+\end{rem}
+\fi
+\jimmy{I am leaving this remark because we had this for a while.} \jw{Sure. I don't want to keep it in the final document we submit for handoff though (added \textbackslash iflong guard).}
+
+
+\jimmy{Does every component have a different key for the AP that they are associated with? If so, what are the benefits of having different keys (over having the same key across all components)?} \jw{Depends which key you mean. HMAC is all the same (no benefit to having different ones since all Component is doing is verifying). \adata encryption key is different per Component, the benefit being that it gives AP ability to check they're talking to the right Component. Also, gives me peace of mind that even if someone with the \apin (attacker in supply chain scenario!) can see a valid ciphertext of another component, they can't decrypt it unless they steal the right one in the list from the AP.}
+
+\jw{HMAC is good, ASSUMING valid component with HMAC SK can't fake AP and construct HMAC. Can't convince valid Component to produce valid HMAC for attest.} \jimmy{Added a remark about this, but this needs to be done carefully because very technically a valid component A with HMAC sk can sign a message and send it to component B (it'd have the HMAC sk since it is valid). There's nothing stopping component A. Though, B will send the ADATA encrypted using its own encryption sk, which A should not have. }
+
+\jw{Symmetric Enc with shared key is good ASSUMING Valid Components won't decrypt the attestation.} \jimmy{Added a remark about this} \jw{This is also resolved by not even giving the Components the attestation encryption/decryption key.}
 % \begin{pcimage}
 % \pcb{$\attest(\pin, \cid)$}{
 % \> \> \\
 % \textbf{Application Processor} \> \text{(I2C channel)} \hspace{1.2cm} \> \textbf{Component}
 % \\[0.1\baselineskip][\hline] \\[-0.5\baselineskip]
-% h \gets H(\pin \| \salt ) \> \> \\
-% \pcif h = H(\apin \| \salt) \pcthen \> \> \\
+% h \gets H(\pin \| \asalt ) \> \> \\
+% \pcif h = H(\apin \| \asalt) \pcthen \> \> \\
 % \t \text{start} \gets \text{getTime()} \> \>  \\
 % \t \tau \gets \MAC_{\sk}(\cid \| \nonce) \> \> \\
 % \textit{(Invoke Challenge-Response)} \> \sendmessageright*{{\texttt{ATTEST\_REQ} \atop \cid, \nonce, \tau}} \> \\

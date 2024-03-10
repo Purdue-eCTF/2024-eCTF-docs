@@ -1,0 +1,71 @@
+\subsection{Build \& Deployment}
+
+\jw{NEW: Added Keys and such}
+
+%ll global secrets will be securely stored in flash memory. Since the flash is on-chip, and the organizer's bootloader uses this for secure storage of firmware, we assume these keys cannot be side-channeled or tampered with.
+
+\paragraph{Global Secrets.} We rely on a simplified version of Public Key Pinning \cite{PKIPinning}, where trust relies on directly ``pinning'' an identity/context to and checking the usage of keys (in our case, via trusted Manufacturer pre-loading PKI keypairs and firmware onto the board), instead of using trusted Certificate Authorities or neighbors to build a hierarchy/web of trust for PKI. As such, all secrets must be loaded onto the board at build time, and can only be used in the specific context/protocols it is intended to be used in.
+
+For the sake of brevity, anything marked $\mathsf{*sk}$ is a secret key, anything marked $\mathsf{*pk}$ or $\mathsf{*vk}$ is a public key, and all cryptographic data must be securely stored in tamper-proof memory. See \Cref{app:abbrev} and each protocol below for the meaning and usage of relevant notation.
+
+\iflong
+The AP holds these \textbf{private values \& secrets} in tamper-proof memory:
+\begin{itemize}
+    \item \textbf{Hashed Attestation PIN} ($H(\apin \Vert \asalt)$): The (password-)hash of the Attestation PIN to compare against. Used in Attest protocol.
+    \item \textbf{Attestation Salt} ($\asalt$): A $16$ B random number. \iflong Unlike most salts, this \textbf{must be kept private} to prevent custom rainbow table attacks on PIN hash.~\fi Used in Attest protocol.
+    \item \textbf{Hashed Replacement Token} ($H(\rtok)$): The (password-)hash of the Replacement Token to compare against. Used in Replace protocol.
+    \item \textbf{Attestation HMAC Key} (\hsk): A (shared) secret key used to authenticate and verify the AP's initial request for the Component's Attestation data. Used in Attest protocol.
+    \item \textbf{Attestation Secret Key} (\ask): A secret key used to encrypt/decrypt Component $i$'s Attestation Data stored on the Component. Used in Attest protocol.
+    \iflong
+    \begin{itemize}
+        \item  The AP has the $\ask_i$ of ALL Components which could be provisioned on the device.
+    \end{itemize}
+    \fi
+    \item \textbf{Message Signing Key} ($\msk_{AP}$): A secret key used to authenticate a message signed by a specific board (AP or Component). Used in Boot and Post-Boot Messaging protocols.
+    \iflong
+    \begin{itemize}
+        \item ONLY the AP has its own signing key, $\msk_{AP}$.
+    \end{itemize}
+    \fi
+    \item \textbf{Challenge-Response Secret Key} (\csk): A (shared) secret key used to validate (via Challenge-Response) that an AP and/or Component was built by or for the Manufacturer's MISC device. Used in Boot protocol.
+\end{itemize}
+
+\vspace{1em}
+The AP also holds these \textbf{public values} in tamper-proof memory:
+\begin{itemize}
+    \item \textbf{Message Verification Key List} ($\mvklist$): Public keys $\mvk_\circ$ (each associated with secret key $\msk_\circ$) used to verify a message has not been tampered with and came from a specific board (AP or Component). Used in Boot and Post-Boot Messaging protocols.
+    \iflong
+    \begin{itemize}
+        \item The AP has the verification key $\mvk_i$ of ALL Components which could be provisioned on the device.
+    \end{itemize}
+    \fi
+    \item \textbf{Provisioned Build ID List} ($\provcid \coloneqq \overline{(\cid, \buildid)}$) : A list of ``build IDs'', mapping \cid to indices \buildid of AP's keylists, corresponding with the provisioned Components of the MISC device. Updated in Replace protocol and used in ALL protocols.
+    %\item \textbf{Used Nonce List} ($\noncelist$): A list of nonces that were previously sent to this component or AP (e.g. as the ``challenge'' part of challenge response, or as a random nonce included in the signature). This is necessary to prevent replay attacks. Used in Attest, Replace, Boot, and Post-Boot Messaging protocols.
+\end{itemize}
+
+\vspace{1em}
+Each Component $i$ holds these \textbf{private values \& secrets} in tamper-proof memory:
+\begin{itemize}
+    \item \textbf{Attestation HMAC Key} (\hsk): See above. Same as the AP's secret key \hsk. Used in Attest protocol.
+    \iflong\item \st{\textbf{Attestation Secret Key} ($\ask_i$)}: See above. While this encrypts Component $i$'s \adata, the key $\ask_i$ itself is \textbf{NOT} stored on its Component, ONLY on the AP. Used in Attest protocol.\fi
+    \item \textbf{Message Signing Key} ($\msk_i$): See above. \iflong Each Component $i$ ONLY has its own secret signing key $\msk_i$.~\fi Used in Boot and Post-Boot Messaging protocols.
+    \item \textbf{Challenge-Response Secret Key} (\csk): See above. Same as the AP's secret key \csk. Used in Boot protocol.
+\end{itemize}
+
+\vspace{1em}
+Each Component $i$ also holds these \textbf{public values} in tamper-proof memory:
+\begin{itemize}
+    \item \textbf{Message Verification Key} ($\msk_{AP}$): See above. Components ONLY store the verification key $\mvk_{AP}$ of the AP. Used in Boot and Post-Boot Messaging protocols.
+    \item \textbf{Build ID} ($\cid_i, \buildid_i$): An identifier pointing to Component $i$'s ``pinned'' key(s) in AP's Component key lists (e.g. \mvklist). See AP above. Used in Boot protocol.
+    %\item \textbf{Used Nonce List} ($\noncelist$): See above. Used in ALL protocols.
+    \item \textbf{Attestation Data Ciphertext} ($\Enc_{\ask_i}(\adata)$): The encrypted Attestation Data (\adata) which serves as a fingerprint for the specific Component $i$. The underlying \adata is assumed to be static after being built, and ANY changes to it on the Component requires it to be sent back to the Component Facility (e.g., for repair). Used in Attest protocol.
+\end{itemize}
+\fi
+
+\paragraph{Error Handling Defenses.} Note that, for all protocols, whenever an attack is detected (e.g., PIN or authentication token is incorrect; decryption, HMACs, signature, or other identifier cannot be verified; hardware-level glitching or tampering is suspected), we delay for an additional 5 seconds before resetting back to a ready/waiting state. To ensure that this complies with the MITRE eCTF rules~\cite{eCTFOfficial}, and for other reasons \iflong such as deterring manual swap-out mid-protocol and ensured state synchronization after $5 + \text{[protocol timeout]}$ seconds regardless of timeout caused by faults or explicit aborts\fi, each side of the communication protocol must timeout after the maximum protocol time has been reached.
+
+The 5s timeout requirement on suspected attacks helps mitigate brute-force and hardware attacks to some degree. In addition, we ensure that all relevant protocol-related checks will fallthrough to a generic protocol error state\iflong; these errors must remain generic to its cause to avoid information leakage and other ``oracle''-based attacks\fi. While such error handling cases are left out of the protocol design documentation for brevity, they are included in our implementation.
+
+
+
+%\jw{TODO: Last acknowledged message list for Post-Boot Messaging ala SSL/TLS sliding window?}

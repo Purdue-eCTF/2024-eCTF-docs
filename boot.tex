@@ -8,48 +8,135 @@
 
 \jw{TODO: COMPONENT MUST MAKE SURE STORED $r_B$ ISN'T STALE, and is erased before boot, and does NOT get stored persistently. We want to have the Component "forget" about the previous session if the AP doesn't manage to boot in the expect amount of time (3ish seconds). Ideally, attackers must not be able to arbitrarily write their own value for $r_B$ in the Component's memory, otherwise invalid AP can boot.}
 
-The boot protocol performs a two-way Challenge-Reponse (CR) sub-protocol to authenticate both the Components and the initiating Application Processor as valid parts of the MISC medical device. The Components remember that a boot request has been made by storing $r_B$. Both the AP and the polled Components only keep around relevant session data and wait for a response for as long as the request remains active (i.e., before boot timeout -- not shown below). Then, once the AP has validated the 2 provisioned Component IDs, it sends them a new signature with the same random value used in its challenge-response to boot to ``prove'' CR has already occurred. The component verifies it is ready, and the entire medical device (AP and Components) both boot.
+The boot protocol first authenticates the AP and its two Components
+%(together, comprising the MISC device)
+as valid and provisioned, before having each Component send back its encrypted boot message to indicate that it is ready to boot. The AP then prints the component's boot message as well as its own, and all parts of the MISC device then disable pre-boot functionality, only allowing post-boot messaging thereafter (see \Cref{sec:messaging}). Our boot protocol can be outlined as follows:
 
 \begin{pcimage}
 \pcb{$\boot()$}{
 \> \> \\
-\textbf{Application Processor} \> \text{(I2C channel)} \hspace{1.2cm} \> \textbf{Component}
+\textbf{Application Processor} \> \text{(I2C channel)} \hspace{1.2cm} \> \textbf{Component } i
 \\[0.1\baselineskip][\hline] \\[-0.5\baselineskip]
-\text{start} \gets \text{getTime}() \> \> \\
-\pcfor \cid \in \provcid \pcdo \\
-\t r_A \sample \rng() \> \> \\ 
-\t \sigma \gets \Sign_{\msk_{AP}}(\cid \| r_A) \\
-\> \sendmessageright*{{ \texttt{BOOT\_REQ} \atop \cid, r_A, \sigma}} \> \\
-\> \> \pcif \text{Verify } \cid = \cid_{\actual} \\
-\> \> \text{ and } \Ver_{\mvk_{AP}}(\cid \| r_A, \sigma) = T \\
+%\text{start} \gets \text{getTime}() \> \> \\
+%\pcfor \cid \in \provcid \pcdo \\
+%\t r_A \sample \rng() \> \> \\ 
+%\t \sigma \gets \Sign_{\msk_{AP}}(\cid \| r_A) \\
+%\> \sendmessageright*{{ \texttt{BOOT\_REQ} \atop \cid, r_A, \sigma}} \> \\
+%\> \> \pcif \text{Verify } \cid = \cid_{\actual} \\
+%\> \> \text{ and } \Ver_{\mvk_{AP}}(\cid \| r_A, \sigma) = T \\
 %\> \> \pcif \text{they both match} \pcthen \\
-\> \> \t c_A \gets \Enc_{\sk}(r_A + 1) \\
-\> \> \t r_B \sample \rng() \\
-\> \> \pcelse \text{ignore} \\
-\> \sendmessageleft*{c_A, r_B} \> \\
-\t \text{Verify } \Dec_{\sk}(c_A) = r_A + 1 \> \> \\
-\t c_B \gets \Enc_{\sk}(r_B + 1) \\
-\> \sendmessageright*{r_B, c_B} \> \\
-\> \> \text{Verify } \Dec_{\sk}(c_B) = r_B + 1 \\
-\> \> \text{Store } r_B \\
-\> \sendmessageleft*{\textit{``Verified''}} \> \\
+%\> \> \t c_A \gets \Enc_{\sk}(r_A + 1) \\
+%\> \> \t r_B \sample \rng() \\
+%\> \> \t \text{Store } r_B \\
+%\> \> \pcelse \text{ignore} \\
+%\> \sendmessageleft*{c_A, r_B} \> \\
+%\t \text{Verify } \Dec_{\sk}(c_A) = r_A + 1 \> \> \\
+%\t c_B \gets \Enc_{\sk}(r_B + 1) \\
+%\> \sendmessageright*{c_B} \> \\
+%\> \> \text{Verify } \Dec_{\sk}(c_B) = r_B + 1 \\
+%\> \sendmessageleft*{\textit{``Verified''}} \> \\
 %\t \text{Try/wait for next CID} \\
-\pcif \text{All } 2\,\provcid \text{ valid} \pcthen \\
-\t \pcfor \mathsf{addr} \in \provcid \pcdo \\
-\t \t \sigma' \gets \Sign_{\msk_{AP}}(\cid \| r_B) \\
-\> \sendmessageright*{{ \texttt{BOOT\_INIT} \atop \cid, r_B, \sigma'}} \> \\
-\> \> \pcif \text{Verify } \cid = \cid_{\actual} \\
-\> \> \text{ and } \Ver_{\mvk_{AP}}(\cid \| r_A, \sigma) = T\\
-\> \> \text{ and } r_B \text{ matches stored } \\
-\> \sendmessageleft*{\textit{``Ready to Boot''}} \> \\
-%\text{end} \gets \text{getTime}() \> \> \\
-%\text{sleep}(3s - (\text{end} - \text{start})) \> \> \\
-% HOPE all of them are still live...
-\mathsf{print\_boot\_hello}() \> \> \mathsf{print\_boot\_hello}() \\
-\mathsf{disable\_preboot\_then\_boot}() \> \> \mathsf{disable\_preboot\_then\_boot}()
+%\pcif \text{All } 2\,\provcid \text{ valid} \pcthen \\
+%\t \pcfor \mathsf{addr} \in \provcid \pcdo \\
+%\t \t \sigma' \gets \Sign_{\msk_{AP}}(\cid \| r_B) \\
+%\> \sendmessageright*{{ \texttt{BOOT\_INIT} \atop \cid, r_B, \sigma'}} \> \\
+%\> \> \pcif \text{Verify } \cid = \cid_{\actual} \\
+%\> \> \text{ and } \Ver_{\mvk_{AP}}(\cid \| r_B, \sigma) = T\\
+%\> \> \text{ and } r_B \text{ matches stored } \\
+%\> \sendmessageleft*{\textit{``Ready to Boot''}} \> \\
+\\
+\pcfor (\cid_i, \buildid_i) \in \provcid \pcdo \\
+%\t \buildid_i \gets \provcid[\cid_i] \> \> \\
+\t m_{B1} \gets \texttt{BOOT\_CHAL} \\
+\t (r_{B1}, \nonce_{B1}) \sample \mathsf{CSPRNG}() \> \> \\
+%\t m_A \gets \texttt{BOOT\_REQ} \\
+%\t \sigma_A \gets \Sign_{\msk_{AP}}(m \| \cid_i \| r_A) \\
+\t c_{B1} \gets \Enc_{\csk}(m_{B1} \| \cid_i \| r_{B1}, \nonce_{B1}) \\
+\> \sendmessageright*{c_{B1}, \nonce_{B1}} \> \\
+\> \> (m_{B1}, \cid_i', r_{B1}) \gets \Dec_{\csk}(c_{B1}, \nonce_{B1}) \\
+\> \> \text{Verify } \cid_i' = \cid_i \\
+\> \> m_{B2} \gets \texttt{BOOT\_CRSP} \\
+\> \> (r_{B2}, \nonce_{B2}) \sample \mathsf{CSPRNG}() \> \> \\
+\> \> M_{B2} \gets m_{B2} \| \cid_i \| \buildid_i \| r_{B1}+1 \| r_{B2} \\
+\> \> \sigma_i \gets \Sign_{\msk_i}(M_{B2}) \\
+\> \> c_{B2} \gets \Enc_{\csk}(M_{B2} \| \sigma_i, \nonce_{B2}) \\
+\> \sendmessageleft*{c_{B2}, \nonce_{B2}} \> \\
+\t (M_{B2}' \| \sigma_i) \gets \Dec_{\csk}(c_{B2}, \nonce_{B2}) \\
+\> \text{(continued\ldots)}  \hspace{1.2cm} \>
 }
 \end{pcimage}
 
-\paragraph{Functionality.} We hope that despite all of this Challenge-Response communication over I2C, it will still meet the 3s timing requirements to boot. Anticipating this, we will consider solutions with fewer rounds in the meantime. The MISC medical device should be left in a consistent state to whatever extent possible in networking scenarios, as all parties are expected to timeout and revert to their usual state after the boot protocol session expires and also the Components wait for the AP to check that all Components have been validated before booting.
+\begin{pcimage}
+\pcb{$\boot()$}{
+%\> \> \\
+%\textbf{Application Processor} \hspace{2cm} \> \text{(I2C channel)} \hspace{1.2cm} \> \textbf{Component } i
+%\\[0.1\baselineskip][\hline] \\[-0.5\baselineskip]
+\> \text{(continued\ldots)}  \hspace{1.2cm} \> \\
+\t \pcif \buildid_i = \textsf{open} \pcthen \\
+\t \t \buildid_i \defeq \provcid[\cid_i] \gets \buildid_i' \\
+\t \text{Verify } \buildid_i \neq \textsf{null} \\
+\t \mvk_i \gets \overline{\mvk}[\buildid_i] \> \> \\
+\t \text{Verify } \Ver_{\mvk_i}(M_{B2}, \sigma_i) = 1 \\
+\t \qquad \text{ and } m_{B2} = \texttt{BOOT\_CRSP} \\
+\t \qquad \text{ and } \cid_i' = \cid_i \\
+\t \qquad \text{ and } r_{B1}' = r_{B1} + 1 \\
+\pcif \text{Both Components valid} \pcthen \\
+\t \pcfor (\cid_i, \buildid_i) \in \provcid \pcdo \\
+\t \t m_{B3} \gets \texttt{BOOT\_RESP} \\
+\t \t \nonce_{B3} \sample \mathsf{CSPRNG}() \> \> \\
+\t \t M_{B3} \gets m_{B3} \| \cid_i \| r_{B1} \| r_{B2} + 1\\
+\t \t \sigma_{AP} \gets \Sign_{\msk_{AP}}(M_{B3}) \\
+\t \t c_{B3} \gets \Enc_{\csk}(M_{B3} \| \sigma_{AP}, \nonce_{B3}) \\
+\> \sendmessageright*{c_{B3}, \nonce_{B3}} \> \\
+\> \> (M_{B3}' \| \sigma_{AP}) \gets \Dec_{\csk}(c_{B3}, \nonce_{B3}) \\
+\> \> \text{Verify } \Ver_{\mvk_{AP}}(M_{B3}, \sigma_{AP}) = 1 \\
+\> \> \qquad \text{ and } m_{B3} = \texttt{BOOT\_RESP} \\
+\> \> \qquad \text{ and } \cid_i' = \cid_i \\
+\> \> \qquad \text{ and } r_{B1}' = r_{B1} \\
+\> \> \qquad \text{ and } r_{B2}' = r_{B2} + 1 \\
+\> \> \t m_{B4} \gets \texttt{COMP\_BOOT\_MSG} \\
+\> \> \t \nonce_{B4} \sample \mathsf{CSPRNG}() \> \> \\
+\> \> \t M_{B4} \gets m_{B4} \| \cid_i \| r_{B1} \| r_{B2} \\
+\> \> \t c_{B4} \gets \Enc_{\csk}(M_{B4}, \nonce_{B4}) \\
+\> \sendmessageleft*{c_{B4}, \nonce_{B4}} \> \\
+\t \t M_{B4}'' \gets \Dec_{\csk}(c_{B4}, \nonce_{B4}) \\
+\t \t \text{Verify } \cid_i'' = \cid_i \\
+\t \t \qquad \text{ and } r_{B1}'' = r_{B1} \\
+\t \t \qquad \text{ and } r_{B2}'' = r_{B2} \\
+\t \t \mathsf{print}(\texttt{COMP\_BOOT\_MSG}) \\
+\t \mathsf{print}(\texttt{AP\_BOOT\_MSG}) \\
+%\> \sendmessageright*{\texttt{BOOT\_INIT}} \> \\
+%\> \sendmessageleft*{\texttt{BOOT\_INIT}} \> \\
+%\> \> \pcif \Ver_{\mvk_{AP}}(c_A, \nonce_{B1}) = 1\\
+%\> \> \qquad \text{ and } \cid_i = \cid_{\actual} \\
+%\> \> \qquad \text{ and }  \\
+%\> \> \noncelist \mathrel{+}= r_A \\
+%\> \> r_B \sample \mathsf{CSPRNG}() \\
+%\> \> m_B \gets \texttt{BOOT\_RESP} \\
+%\> \> \sigma_B \gets \Sign_{\msk_i}(m_B \| dpe\cid_{\actual} \| r_B) \\
+%\> \sendmessageleft*{{m_B, \cid_{\actual}, r_B, \sigma_B}} \> \\
+%\t \buildid_i' \gets \provcid[\cid_{\actual}] \> \> \\
+%\t \mvk_i \gets \overline{\mvk}[\buildid_i] \> \> \\
+%\t \text{Verify } \Ver_{\mvk_{i}}(m_B \| \cid_i \| r_B, \sigma_B) = 1 \> \> \\
+%\t \qquad \text{ and } \cid_i = \cid_{\actual} \> \> \\
+%\t \qquad \text{ and } \buildid_i' = \buildid_i \> \> \\
+%\t \qquad \text{ and } r_B \not\in \noncelist \> \> \\
+%\t \noncelist \mathrel{+}= r_B \> \>  \\
+% Ready to boot right
+%\> \sendmessageright*{{m_A, \cid_i, r_A, \sigma_A}} \> \\
+%\text{end} \gets \text{getTime}() \> \> \\
+%\text{sleep}(3s - (\text{end} - \text{start})) \> \> \\
+% HOPE all of them are still live...
+\mathsf{disable\_preboot\_and\_boot}() \> \> \mathsf{disable\_preboot\_and\_boot}()
+}
+\end{pcimage}
 
-\paragraph{Security. } As with prior protocols, we use challenge-response protocols with strongly random nonces to prevent replay attacks, and to make sure both parties are live and properly provisioned with the expected keys. Digital signatures are used to authenticate the AP from the other components.
+%via a two-way combined Challenge-Response (CR) and signature verification subroutine. Components remember that a boot request has been made by storing $r_B$.  Both the AP and the polled Components only keep around relevant session data and wait for a response for as long as the request remains active (i.e., before boot timeout -- not shown below). Then, once the AP has validated the 2 provisioned Component IDs, it sends them a new signature with the same random value used in its challenge-response to boot to ``prove'' CR has already occurred. The component verifies it is ready, and the entire medical device (AP and Compohttps://www.overleaf.com/project/65b6af46e349d9029328d11anents) both boot.
+
+\paragraph{Functionality.} The AP first checks to make sure both Components are live via a two-way combined Challenge-Response (CR) subroutine before booting, and the Component indicates to the AP that it is ready to boot by sending a boot message to the AP through the same CR subroutine. If a Component was replaced prior to boot (i.e., $\provcid[\cid_i] = \mathsf{open}$), its key-pin ID $\buildid_i$ is received and persistently recorded by the AP for validation to function. Despite computationally expensive $\mathsf{Sign}$ and $\mathsf{Ver}$ checks and multiple rounds of I2C communication, we have ensured that it takes at most 3 seconds to complete $\mathsf{Boot}$. See \Cref{sec:messaging} for more details on the feasibility of public key-pinning signing keys.
+
+%We hope that despite all of this Challenge-Response communication over I2C, it will still meet the 3s timing requirements to boot. Anticipating this, we will consider solutions with fewer rounds in the meantime. The MISC medical device should be left in a consistent state to whatever extent possible in networking scenarios, as all parties are expected to timeout and revert to their usual state after the boot protocol session expires and also the Components wait for the AP to check that all Components have been validated before booting.
+
+\paragraph{Security.} Components are checked for liveness, uniqueness of $(\cid_i, \buildid_i)$, and validity before the AP accepts the CR authentication checks. The CR subroutine provides a basic validity check via test-decryption, which secondarily serves to frustrate statistical attacks on the RNG \iflong by encrypting some of the $\mathsf{CSPRNG}$-generated ``challenge' nonces\fi. Additionally, digital signature checks in the CR subroutine also ensure that the AP and all components are identified and valid parts of the MISC device. Both the AP and Component can only boot after individually authenticating each other. Unique messages and challenges/nonces for each encryption help mitigate ``oracle'' and replay attacks. The random nonces $r_{B1}$ and $r_{B2}$ also serve as unique challenges and as session-binding. In case the Component's encrypted boot message contains the flag or other sensitive data, the received \texttt{COMP\_BOOT\_MSG} is encrypted when being sent back to the AP. 
+
+We also note that, even though in real boot protocols it is generally advisable to undergo some form of $\mathsf{Attest}$ protocol to verify the integrity of the device's components, this competition excluding $\rtok$ from the input of $\mathsf{Boot}$, not providing any uniqueness guarantees on $H(\adata)$ as a uniquely identifiable ``fingerprint'' of each individual Component, and not including any unique AP identifier makes it inadvisable to sanely or safely implement boot-attestation checks in the usual manner. \iflong \textbf{While it still might be possible to implement firmware and/or \adata hash validation checks without risking \adata leakage}, we opted not to implement this due to concerns about timing and (in the case of \adata) dictionary attacks, and instead rely on the fact that in order for an attacker to impersonate a boot protocol using a counterfeit part of a MISC device, they must extract ALL valid, provisioned, and pre-pinned signing keys for all APs and Components involved in the protocol.

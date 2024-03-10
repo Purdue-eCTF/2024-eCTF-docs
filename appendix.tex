@@ -1,5 +1,6 @@
 \appendix
 
+\iflong
 \begin{landscape}
 \section{Defenses against Attackers' Goals and Capabilities}
 \label{app:table}
@@ -9,62 +10,80 @@
 \begin{tabular}{|c||c|c|c|c|c|}
 \hline
 \hbox{\diagbox{Capability}{Goal}}
-    & \thead{Replacement \\ Invalid or Token \\ Extract \textbf{(SR3)}}
-    & \thead{Extract \\ Attest. PIN / \\ Data \textbf{(SR3--4)}}
-    & \thead{Boot with \\ Invalid \\ AP \textbf{(SR2)}}
-    & \thead{Boot with \\ Invalid \\ Comp. \textbf{(SR1)}}
-    & \thead{Tampered \\ Post-Boot \\ Msgs. \textbf{(SR5)}}
+    & \thead{Invalid Replalce \\ or \rtok Extract \\ \textbf{(SR3)}}
+    & \thead{Extract \\ \apin / \adata \\ \textbf{(SR3--4)}}
+    & \thead{Boot with \\ Invalid AP \\ \textbf{(SR2)}}
+    & \thead{Boot with \\ Invalid Comp. \\ \textbf{(SR1)}}
+    & \thead{Tamper Post-\\ Boot Msgs. \\ \textbf{(SR5)}}
     \\ \hline\hline
-\thead{Impersonate AP \\ \textbf{(\hl{AS1-3?}, AS4)}} % D2: {SR2, SR4} (Black Box)
-    & \makecell{N/A \\~\![known/ignored]}
-    & \makecell{AP needs HW \\ only Enc. key}
-    & \makecell{C-R with HW \\ only AP secret}
+\thead{Impersonate AP \\ \textbf{(AS4)}} % D2: {SR2, SR4} (Black Box)
+    & \makecell{N/A \\~\![fake \rtok\!\!]}
+    & \makecell{Encrypted \adata}
+    & \makecell{CR+Sign AP}% \\ with HW key}
     %& %\makecell{C-R with HW \\ only AP secret}
     & \makecell{N/A \\~\![all dishonest]}
-    & \multirow{2}{*}{\makecell{\\ Signatures?}} %lmao hacky \\[-0.5em]
+    & \multirow{2}{*}{\makecell{\\[-1em] Digital \\ Signatures w/ \\ pub. key-pinning}} %lmao hacky \\[-0.5em]
     \\ \cline{1-5}
-    \thead{Impersonate Comp. \\ \textbf{(\hl{AS1?}, AS2--4})}
-    & \makecell{Don't send \\ RTok, C-R Comp.}
-    & \makecell{Don't send \\ APIN to Comp.}
+    \thead{Impersonate Comp. \\ \textbf{(AS2--4})}
+    & \makecell{Don't send \rtok,\\$\mathsf{Boot}$ CR+Sign Comp.}
+    & \makecell{Rate-limit \apin}%N/A \\~\![fake \adata\!\!]}
     & \makecell{N/A \\~\![all dishonest]}
-    & \multirow{2}{*}{\makecell{C-R with HW \\ only Comp. \\ Secret \\ (NOT CID)}}
+    & \makecell{CR+Sign Comp.}
     & % merge above
-    \\ \cline{1-4}\cline{6-6}
-\thead{Supply Chain Swap \\ \textbf{(AS3)}} % D3: {SR1, SR4}
-    & \makecell{N/A \\~\![known]}
-    & \makecell{Encrypt Secrets \\ more than APIN}
-    & \makecell{C-R with HW \\ only AP secret}
-    & % merge above
-    & \makecell{N/A \\~\![no post-boot]}
-    \\ \hline
+    \\ \cline{1-6}
+\thead{C\&C Counterfeit Comp.\\ \textbf{(AS3)}} % D3: {SR1, SR4}
+    & \makecell{$\mathsf{Boot}$ CR+Sign Comp. \\ NOT based on \rtok}% merge above %\makecell{N/A \\~\![known]}
+    & \makecell{Encrypted \adata \\ NOT based on \apin}
+    & \makecell{CR+Sign Comp.\\ with HW key}
+    & \makecell{N/A \\~\![all dishonest]}
+    & \makecell{N/A \\~\![pre-boot only]}
+    \\ \hline%\cline{1-1}\cline{3-6}
 \thead{Eavesdrop I2C Bus \\ \textbf{(All AS)}}
-    & \makecell{Don't send \\ RToken}
-    & \makecell{Encrypt Sent \\ Attestation Data}
-    & \multicolumn{2}{c|}{\multirow{3}{*}{CSPRNG Nonce with C-R}}
+    & \makecell{Don't send \rtok} % merge above %\makecell{Don't send \\ RToken}
+    & \makecell{Encrypted \adata,\\Don't send \apin}
+    & \multicolumn{2}{c|}{\multirow{3}{*}{\makecell{\\[0.5em] CR+Sign AP \& Comp.,\\ Check Unique CSPRNG \\ Challenges \& Nonces}}}
     %& 
-    & \multirow{3}{*}{\makecell{\\[0.5em] CSPRNG \\ Nonce with \\ Signatures}} 
+    & \multirow{3}{*}{\makecell{\\[1em] Check Unique \\ CSPRNG Nonces}} 
     \\ \cline{1-3}
-\thead{Try/Replay AP Msgs. \\ \textbf{(All AS)}}
-    & \makecell{C-R Auth. \\ AP before boot} 
-    & Rate-limit APIN
+\thead{Fake/Replay AP Msg. \\ \textbf{(All AS)}}
+    & \makecell{$\mathsf{Boot}$ CR+Sign AP, \\ Check Unique Nonces} 
+    & \makecell{Check Unique Nonces}
     &\multicolumn{2}{c|}{}
     %& 
     & 
     \\ \cline{1-3}
-\thead{Replay Comp. Msgs. \\ \textbf{(All AS)}}
-    & \makecell{AP expects \\ RTok first + C-R}
-    & \makecell{N/A \\~\![repeat AData]}
+\thead{Fake/Replay Comp. Msg. \\ \textbf{(All AS)}}
+    & \makecell{$\mathsf{Boot}$ CR+Sign Comp.,\\ Check Unique Nonces}
+    & \makecell{Rate-limit \apin hash \\ with private salt}%N/A\\~\![fake \adata\!\!}
     & \multicolumn{2}{c|}{} 
     %& 
     & 
     \\ \hline
 \thead{Hardware Access \\ \textbf{(AS1--2, AS4)}}
-    & \multicolumn{5}{c|}{{No Side-Channels, Hash APIN, Fault-Tolerance, \& Encrypt Stored AData}}
+    & \multicolumn{4}{c|}{{Fault Tolerance, No Side-Channels, Hash \apin, \& Encrypt \adata}}
 %    & 
 %    & 
 %    & 
-%    & 
+     & \makecell{Secure key store, \\ pub. key-pinning\\}
+    \\ \hline
+\thead{Catastrophic Crypto \\ Secret Leakage \\ \textbf{(\iflong\textcolor{red}{AS1},~\fi AS2, AS4)}}
+     & Rate-limit \rtok
+     & \makecell{Rate-limit \apin hash}
+     & \multicolumn{2}{c|}{\makecell{Missing $\mathsf{Sign}$ Keys, Avoid Key Sub.\\ over missing pinned+fixed $\mathsf{Ver}$ keys\iflong~(AS2,AS4)\fi}}
+%     & 
+     & \textbf{\textcolor{red}{Cope.}}
     \\ \hline
 \end{tabular}
 \end{table}
 \end{landscape}
+\fi
+
+\section{Terminology and Notation}
+\label{app:abbrev}
+\vspace{-3em}
+\glsaddall % see main.tex
+%\setlength{\glsdescwidth}{0.5\linewidth}
+%\setlength{\glspagelistwidth}{0.1\linewidth}
+\printnoidxglossary[type=acronym,sort=letter,title=Abbreviations]%,style=index]%, style=mcolindex]
+\vspace{-1em}
+\printnoidxglossary[type=symbols,sort=letter,style=mcolindex]

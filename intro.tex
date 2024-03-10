@@ -1,13 +1,14 @@
 \section{Introduction}
 \label{sec:intro}
 
-\iflong
-\paragraph{MITRE eCTF.} 
-Embedded Capture The Flag\texttrademark~(eCTF) is a semester-long cybersecurity competition which allows students to develop secure designs for and attacks against embedded systems. MITRE's eCTF is split into two phases. In the first phase, teams design and implement secure embedded system based on a set of functionality and security requirements. In the second phase, teams analyze and attack the designs of other competing teams, receiving ``flags'' of the form \flag{\dots} and being awarded points for doing so. 
 
-The overarching theme for eCTF 2024 \cite{eCTFOfficial} is Medical Infrastructure Supply Chains (MISC), where ``medical device'' components must be authenticated and validated and must keep attestation data confidential, all while attackers have physical access to the devices or even insider access to component manufacture and replacement processes.%\jw{This is really just context if we want to share it outside the competition}
-\fi
+\paragraph{Competition Overview.}
+%\iflong
+Embedded Capture The Flag\texttrademark~(eCTF) is a semester-long cybersecurity competition which allows students to develop secure designs for and attacks against embedded systems. MITRE's eCTF is split into two phases. In the first phase, teams design and implement a secure embedded system based on a set of functionality and security requirements. In the second phase, teams analyze and attack the designs of other competing teams, receiving ``flags'' of the form \flag{\dots} and being awarded points for doing so, with a number of additional points for being the first to successfully attack a team's design, having the best posters and documentation, etc.
 
-\paragraph{Team Overview.} We are a team of 16 undergraduate and graduate students, all collaborating on this competition in-person at Purdue University for the Spring 2024 semester. Our team consists of mostly members of the Purdue Capture the Flag (CTF) team \texttt{b01lers}, along with some of the faculty advisors' students. The team is co-advised by Prof. Christina Garman, Prof. Kazem Taram, and Prof. Santiago Torres-Arias.
+%\fi
+The overarching theme for MITRE eCTF 2024 \cite{eCTFOfficial} is Medical Infrastructure Supply Chains (MISC), where ``medical device'' components must be authenticated and validated and must keep attestation data confidential, all while attackers have physical access to the devices or even insider access to component manufacture and replacement processes.
 
-\paragraph{Board Overview.} The competition uses Analog MAX78000FTHR evaluation boards for all embedded devices. The boards can represent arbitrary medical Components (e.g., an insulin pump) or an Application Processor (i.e., a microcontroller for all Components).
+\paragraph{Team Overview.} We are a team of 17 undergraduate and graduate students, all collaborating on this competition in-person at Purdue University for the Spring 2024 semester. Our team consists of mostly members of the Purdue Capture the Flag (CTF) team \texttt{b01lers}, along with some of the faculty advisors' students. The team is co-advised by Professors Christina Garman (CS), Kazem Taram (CS), and Santiago Torres-Arias (ECE).
+
+\paragraph{Board Overview.} The competition uses Analog MAX78000FTHR evaluation boards for all embedded devices. The boards can represent a medical device's Components (e.g., an insulin pump) or an Application Processor (i.e., a microcontroller for all Components).
